@@ -1,0 +1,9 @@
+*
+!.gitignore
+!*.cpp
+!*.h
+!*.c
+!*.txt
+!*.pro
+!ui/
+!ui/*.ui
