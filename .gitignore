@@ -7,3 +7,5 @@
 !*.pro
 !ui/
 !ui/*.ui
+!arduino/
+!arduino/*.ino
