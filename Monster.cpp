@@ -11,6 +11,7 @@
 #include "Monster.h"
 
 Monster::Monster() {
+    setBaudRate(QSerialPort::Baud115200);
     connect(this, SIGNAL(readyRead()), this, SLOT(readyReadSlot()));
 }
 
@@ -26,7 +27,7 @@ void Monster::readyReadSlot() {
         if (m_stateLine.contains("state:")) {
             m_stateLine = m_stateLine.remove("state:");
             QStringList list = m_stateLine.split(QChar(','));
-            if (list.count() >= 10) {
+            if (list.count() >= 12) {
                 m_currentSensor[0] = list.at(0).toUInt(&ok);
                 m_currentSensor[1] = list.at(1).toUInt(&ok);
                 m_diag[0] = list.at(2).toUInt(&ok);
@@ -39,6 +40,8 @@ void Monster::readyReadSlot() {
                 uint inb2 = list.at(9).toUInt(&ok) & 0x01;
                 m_motionState[0] = ina1 | (inb1 << 1);
                 m_motionState[1] = ina2 | (inb2 << 1);
+                m_angle[0] = (qreal)list.at(10).toUInt(&ok) / 2048.0 * M_PI;
+                m_angle[1] = (qreal)list.at(11).toUInt(&ok) / 2048.0 * M_PI;
             }
         }
     }
@@ -58,6 +61,10 @@ uint Monster::getDiag(uint index) {
 
 uint Monster::getMotionState(uint index) {
     return index < 2 ? m_motionState[index] : 0;
+}
+
+qreal Monster::getAngle(uint index) {
+    return index < 2 ? m_angle[index] : 0.0;
 }
 
 void Monster::setMotionLeft() {

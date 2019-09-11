@@ -9,6 +9,7 @@
 
 MainWindow::MainWindow() {
     widget.setupUi(this);
+    widget.groupBox_2->layout()->addWidget(&m_radar);
 
     stateWidget[0].setupUi(widget.widgetState1);
     stateWidget[1].setupUi(widget.widgetState2);
@@ -97,6 +98,9 @@ void MainWindow::updatedStateSlot(const QString &line) {
                 QString("%0").arg(m_monster.getDiag(i))
             );
     }
+    
+    m_radar.setSensor(m_monster.getAngle(0), m_monster.getAngle(1), true);
+    
 }
 
 void MainWindow::closePortSlot() {

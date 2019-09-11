@@ -19,6 +19,7 @@ public:
     uint getCurrentSensor(uint index);
     uint getDiag(uint index);
     uint getMotionState(uint index);
+    qreal getAngle(uint index);
 public slots:
     void setMotionLeft();
     void setMotionRight();
@@ -32,6 +33,8 @@ private:
     uint m_currentSensor[2] = { 0 };
     uint m_diag[2] = { 0 };
     uint m_motionState[2] = { 0 };
+    qreal m_angle[2] = { 0.0 };
+
 private slots:
     void readyReadSlot();
 signals:

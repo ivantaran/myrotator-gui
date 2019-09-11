@@ -12,6 +12,7 @@
 #include "ui_MainWindow.h"
 #include "ui_StateWidget.h"
 #include "Monster.h"
+#include "Radar.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -22,7 +23,7 @@ private:
     Ui::MainWindow widget;
     Ui::StateWidget stateWidget[2];
     Monster m_monster;
-    QSerialPort m_port;
+    Radar m_radar;
 
 private slots:
     void updatePortListSlot();

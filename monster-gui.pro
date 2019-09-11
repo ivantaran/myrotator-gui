@@ -11,6 +11,7 @@ CONFIG += c++11
 
 SOURCES += main.cpp \
     Monster.cpp \
+    Radar.cpp \
     MainWindow.cpp
 
 #RESOURCES += vkns.qrc
@@ -21,6 +22,7 @@ FORMS += \
 
 HEADERS += \
     Monster.h \
+    Radar.h \
     MainWindow.h
 
 #version.commands = bash $$PWD/vkns-version.sh
