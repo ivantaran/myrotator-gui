@@ -12,11 +12,11 @@ int angle2 = -1;
 unsigned long t0 = 0;
 
 bool controller_enabled = false;
+long ctrl_ki = 1000;
+long ctrl_kp = 20;
+long ctrl_angle = 2048;
 
 void controller(void) {
-    long ki = 1000;
-    long kp = 20;
-    long angle = 2048;
     long error1 = 0;
     long amp = 1000;
     static long error0 = 0;
@@ -30,7 +30,7 @@ void controller(void) {
     }
     
     error1 = error0;
-    error0 = angle - angle1;
+    error0 = ctrl_angle - angle1;
     
     if (error0 > 2047) {
         error0 -= 4096;
@@ -39,7 +39,7 @@ void controller(void) {
         error0 += 4096;
     }
 
-    value -= ((ki + kp) * error0 - ki * error1);
+    value -= ((ctrl_ki + ctrl_kp) * error0 - ctrl_ki * error1);
     
     // if (value > 511 * amp) {
     //     value = 511 * amp;
@@ -66,6 +66,10 @@ void controller(void) {
 
     motor1.setMotion(value / amp);
     Serial.print(value / amp);
+    Serial.print(',');
+    Serial.print(ctrl_kp);
+    Serial.print(',');
+    Serial.print(ctrl_ki);
     Serial.print(',');
     Serial.println(error0);
 }
@@ -174,6 +178,21 @@ void accept_command(const char *buffer) {
         }
         else if (line.startsWith("con")) {
             controller_enabled = !controller_enabled;
+        }
+        else if (line.startsWith("ctrl_kp")) {
+            line = line.substring(7);
+            line.trim();
+            ctrl_kp = line.toInt();
+        }
+        else if (line.startsWith("ctrl_ki")) {
+            line = line.substring(7);
+            line.trim();
+            ctrl_ki = line.toInt();
+        }
+        else if (line.startsWith("ctrl_angle")) {
+            line = line.substring(10);
+            line.trim();
+            ctrl_angle = line.toInt();
         }
     }
 }

@@ -21,7 +21,8 @@ public:
     uint getMotionState(uint index);
     qreal getAngle(uint index);
     void setMotion(uint index, int value);
-
+    void setController(int kp, int ki);
+    void setAngle(int angle);
 private:
     QString m_stateLine;
     uint m_pwm[2] = { 0 };

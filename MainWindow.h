@@ -33,6 +33,8 @@ private slots:
     void updatedStateSlot(const QString &line);
     void setMotion1Slot(int value);
     void setMotion2Slot(int value);
+    void setControllerSlot();
+    void setAngleSlot();
     void brakeMotion1Slot();
     void brakeMotion2Slot();
 };

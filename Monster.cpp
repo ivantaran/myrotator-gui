@@ -71,6 +71,15 @@ void Monster::setMotion(uint index, int value) {
     write(QString("set motion%1 %2\n").arg(index + 1).arg(value).toUtf8());
 }
 
+void Monster::setController(int kp, int ki) {
+    write(QString("set ctrl_kp %1\n").arg(kp).toUtf8());
+    write(QString("set ctrl_ki %1\n").arg(ki).toUtf8());
+}
+
+void Monster::setAngle(int angle) {
+    write(QString("set ctrl_angle %1\n").arg(angle).toUtf8());
+}
+
 void Monster::testSlot() {
     qWarning() << "testSlot";
     write("set con\n");

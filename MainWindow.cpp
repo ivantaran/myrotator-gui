@@ -18,6 +18,8 @@ MainWindow::MainWindow() {
     connect(widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
     connect(widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
+    connect(stateWidget[0].buttonSetController, SIGNAL(clicked()), this, SLOT(setControllerSlot()));
+    connect(stateWidget[0].buttonSetAngle, SIGNAL(clicked()), this, SLOT(setAngleSlot()));
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
     connect(stateWidget[0].spinBoxMotion, SIGNAL(valueChanged(int)), this, SLOT(setMotion1Slot(int)));
@@ -126,3 +128,20 @@ void MainWindow::brakeMotion2Slot() {
     stateWidget[1].spinBoxMotion->setValue(0);
 }
 
+void MainWindow::setControllerSlot() {
+    bool ok_kp;
+    bool ok_ki;
+    int kp = stateWidget[0].leKp->text().toInt(&ok_kp);
+    int ki = stateWidget[0].leKi->text().toInt(&ok_ki);
+    if (ok_kp && ok_ki) {
+        m_monster.setController(kp, ki);
+    }
+}
+
+void MainWindow::setAngleSlot() {
+    bool ok;
+    int angle = stateWidget[0].leAngle->text().toInt(&ok);
+    if (ok) {
+        m_monster.setAngle(angle);
+    }
+}
