@@ -15,43 +15,6 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>Motion State</string>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_5">
-      <item>
-       <widget class="QLabel" name="labelMotion">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="buttonMotionLeft">
-        <property name="text">
-         <string>&lt;&lt;</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="buttonMotionRight">
-        <property name="text">
-         <string>&gt;&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="buttonMotionBrake">
-        <property name="text">
-         <string>||</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
     <widget class="QGroupBox" name="groupBox_5">
      <property name="title">
       <string>Diag</string>
@@ -86,27 +49,46 @@
    <item>
     <widget class="QGroupBox" name="groupBox_4">
      <property name="title">
-      <string>PWM</string>
+      <string>Motion</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
+       <widget class="QLabel" name="labelMotion">
+        <property name="text">
+         <string>0</string>
+        </property>
+        <property name="margin">
+         <number>28</number>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="labelPwm">
         <property name="text">
-         <string>TextLabel</string>
+         <string>0</string>
+        </property>
+        <property name="margin">
+         <number>28</number>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="buttonPwmIncrease">
-        <property name="text">
-         <string>+</string>
+       <widget class="QSpinBox" name="spinBoxMotion">
+        <property name="minimum">
+         <number>-255</number>
+        </property>
+        <property name="maximum">
+         <number>255</number>
+        </property>
+        <property name="singleStep">
+         <number>10</number>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="buttonPwmDecrease">
+       <widget class="QPushButton" name="buttonMotionBrake">
         <property name="text">
-         <string>-</string>
+         <string>break</string>
         </property>
        </widget>
       </item>

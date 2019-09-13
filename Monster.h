@@ -20,12 +20,7 @@ public:
     uint getDiag(uint index);
     uint getMotionState(uint index);
     qreal getAngle(uint index);
-public slots:
-    void setMotionLeft();
-    void setMotionRight();
-    void setMotionBrake();
-    void setPwmIncrease();
-    void setPwmDecrease();
+    void setMotion(uint index, int value);
 
 private:
     QString m_stateLine;
@@ -37,6 +32,10 @@ private:
 
 private slots:
     void readyReadSlot();
+
+public slots:
+    void testSlot();
+
 signals:
     void updatedState(const QString &line);
 };

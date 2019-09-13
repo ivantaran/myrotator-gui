@@ -67,24 +67,11 @@ qreal Monster::getAngle(uint index) {
     return index < 2 ? m_angle[index] : 0.0;
 }
 
-void Monster::setMotionLeft() {
-    write("<");
+void Monster::setMotion(uint index, int value) {
+    write(QString("set motion%1 %2\n").arg(index + 1).arg(value).toUtf8());
 }
 
-void Monster::setMotionRight() {
-    write(">");
+void Monster::testSlot() {
+    qWarning() << "testSlot";
+    write("set con\n");
 }
-
-void Monster::setMotionBrake() {
-    write("b");
-}
-
-void Monster::setPwmIncrease() {
-    write("+");
-}
-
-void Monster::setPwmDecrease() {
-    write("-");
-}
-
-

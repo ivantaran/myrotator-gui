@@ -17,15 +17,13 @@ MainWindow::MainWindow() {
     updatePortListSlot();
     connect(widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
+    connect(widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
-    for (uint i = 0; i < 2; i++) {
-        connect(stateWidget[i].buttonMotionRight, SIGNAL(clicked()), &m_monster, SLOT(setMotionRight()));
-        connect(stateWidget[i].buttonMotionLeft, SIGNAL(clicked()), &m_monster, SLOT(setMotionLeft()));
-        connect(stateWidget[i].buttonMotionBrake, SIGNAL(clicked()), &m_monster, SLOT(setMotionBrake()));
-        connect(stateWidget[i].buttonPwmIncrease, SIGNAL(clicked()), &m_monster, SLOT(setPwmIncrease()));
-        connect(stateWidget[i].buttonPwmDecrease, SIGNAL(clicked()), &m_monster, SLOT(setPwmDecrease()));
-    }
+    connect(stateWidget[0].spinBoxMotion, SIGNAL(valueChanged(int)), this, SLOT(setMotion1Slot(int)));
+    connect(stateWidget[1].spinBoxMotion, SIGNAL(valueChanged(int)), this, SLOT(setMotion2Slot(int)));
+    connect(stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion1Slot()));
+    connect(stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion2Slot()));
 }
 
 MainWindow::~MainWindow() {
@@ -109,3 +107,22 @@ void MainWindow::closePortSlot() {
     }
     updateGuiSlot();
 }
+
+void MainWindow::setMotion1Slot(int value) {
+    m_monster.setMotion(0, value);
+}
+
+void MainWindow::setMotion2Slot(int value) {
+    m_monster.setMotion(1, value);
+}
+
+void MainWindow::brakeMotion1Slot() {
+    m_monster.setMotion(0, 0);
+    stateWidget[0].spinBoxMotion->setValue(0);
+}
+
+void MainWindow::brakeMotion2Slot() {
+    m_monster.setMotion(1, 0);
+    stateWidget[1].spinBoxMotion->setValue(0);
+}
+
