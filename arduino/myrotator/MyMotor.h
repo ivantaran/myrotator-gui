@@ -1,13 +1,5 @@
-#ifndef MYROTATOR_H_
-#define MYROTATOR_H_
-
-#define SDA_PIN 2
-#define SDA_PORT PORTD
-#define SCL_PIN 3
-#define SCL_PORT PORTD
-#define I2C_PULLUP 1
-#include <SoftWire.h>
-#include <Wire.h>
+#ifndef MYMOTOR_H_
+#define MYMOTOR_H_
 
 #define PIN_EN1   A0
 #define PIN_EN2   A1
@@ -25,15 +17,8 @@
 
 #define PWM_MASK  0xff
 
-#define TIMER_PERIOD  200ul
-
-/* Sensor defines */
-#define UART_SPEED            115200
-#define I2C_SENSOR_ADDR       0x36
-#define I2C_SENSOR_ANGLE_ADDR 0x0e
-/**/
-
-void motor1_brake(void);
+#define TIMER_PERIOD    200ul
+#define UART_SPEED      115200
 
 class MyMotor {
 public:    
@@ -66,10 +51,10 @@ public:
                 m_pwm = 255;
                 this->setMotionRight();
             }
-            // else if (value < 50) {
-            //     m_pwm = 50;
-            //     this->setMotionRight();
-            // }
+            else if (value < 50) {
+                m_pwm = 0;
+                this->brake();
+            }
             else {
                 m_pwm = value;
                 this->setMotionRight();
@@ -80,10 +65,10 @@ public:
                 m_pwm = 255;
                 this->setMotionLeft();
             }
-            // else if (value > -50) {
-            //     m_pwm = 50;
-            //     this->setMotionLeft();
-            // }
+            else if (value > -50) {
+                m_pwm = 0;
+                this->brake();
+            }
             else {
                 m_pwm = -value;
                 this->setMotionLeft();
@@ -137,4 +122,4 @@ private:
 
 };
 
-#endif /* MYROTATOR_H_ */
+#endif /* MYMOTOR_H_ */

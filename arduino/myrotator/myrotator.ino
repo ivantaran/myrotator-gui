@@ -1,20 +1,21 @@
 
-#include "myrotator.h"
+#include "MyMotor.h"
+#include "As5601.h"
 
-SoftWire softWire = SoftWire();
-MyMotor motor1 = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
-MyMotor motor2 = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
+MyMotor motor_azm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
+MyMotor motor_elv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
+
+As5601 sensor_azm = As5601(true);
+As5601 sensor_elv = As5601(false);
 
 int ms = 100;
-int angle1 = -1;
-int angle2 = -1;
 
 unsigned long t0 = 0;
 
 bool controller_enabled = false;
 long ctrl_ki = 1000;
-long ctrl_kp = 20;
-long ctrl_angle = 2048;
+long ctrl_kp = 30;
+long ctrl_angle = 0;
 
 void controller(void) {
     long error1 = 0;
@@ -22,7 +23,7 @@ void controller(void) {
     static long error0 = 0;
     static long value = 0;
     
-    if (!controller_enabled || angle1 < 0) {
+    if (!controller_enabled || sensor_azm.isValid()) {
         error0 = 0;
         error1 = 0;
         value = 0;
@@ -30,23 +31,23 @@ void controller(void) {
     }
     
     error1 = error0;
-    error0 = ctrl_angle - angle1;
+    error0 = ctrl_angle - sensor_azm.getAngle();
     
-    if (error0 > 2047) {
-        error0 -= 4096;
-    }
-    else if (error0 < -2047) {
-        error0 += 4096;
-    }
+    // if (error0 > 2047) {
+    //     error0 -= 4096;
+    // }
+    // else if (error0 < -2047) {
+    //     error0 += 4096;
+    // }
 
     value -= ((ctrl_ki + ctrl_kp) * error0 - ctrl_ki * error1);
     
-    // if (value > 511 * amp) {
-    //     value = 511 * amp;
-    // }
-    // else if (value < -511 * amp) {
-    //     value = -511 * amp;
-    // }
+    if (value > 511 * amp) {
+        value = 511 * amp;
+    }
+    else if (value < -511 * amp) {
+        value = -511 * amp;
+    }
     // else if (value < 50 * amp && value > 0) {
     //     if (abs(error0) > 4) {
     //         value = 50 * amp;
@@ -64,7 +65,7 @@ void controller(void) {
     //     }
     // }
 
-    motor1.setMotion(value / amp);
+    motor_azm.setMotion(value / amp);
     Serial.print(value / amp);
     Serial.print(',');
     Serial.print(ctrl_kp);
@@ -78,83 +79,44 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     Serial.begin(UART_SPEED);
-    Wire.begin();
-    softWire.begin();
 
     t0 = millis();
   
     digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void requestSensorValue() {
-  angle1 = -1;
-  
-  Wire.beginTransmission(I2C_SENSOR_ADDR);
-  Wire.write(byte(I2C_SENSOR_ANGLE_ADDR));
-  Wire.endTransmission();
-  Wire.requestFrom(I2C_SENSOR_ADDR, 2);
-
-  int value = 0;
-  int n = 0;
-  while (Wire.available()) {
-    byte c = Wire.read();
-    value = (value << 8) | c;
-    n++;
-  }
-  
-  angle1 = (n == 2) ? value : -1;
-}
-
-void requestSoftSensorValue() {
-  angle2 = -1;
-  
-  softWire.beginTransmission(I2C_SENSOR_ADDR);
-  softWire.write(byte(I2C_SENSOR_ANGLE_ADDR));
-  softWire.endTransmission();
-  softWire.requestFrom(I2C_SENSOR_ADDR, 2);
-
-  int value = 0;
-  int n = 0;
-  while (softWire.available()) {
-    byte c = softWire.read();
-    value = (value << 8) | c;
-    n++;
-  }
-  
-  angle2 = (n == 2) ? value : -1;
-}
-
 void timerEvent() {
     Serial.print("state:");
-    Serial.print(motor1.getCurrentSensorValue());
+    Serial.print(motor_azm.getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motor2.getCurrentSensorValue());
+    Serial.print(motor_elv.getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motor1.getEnDiagValue());
+    Serial.print(motor_azm.getEnDiagValue());
     Serial.print(",");
-    Serial.print(motor2.getEnDiagValue());
+    Serial.print(motor_elv.getEnDiagValue());
     Serial.print(",");
-    Serial.print(motor1.getPwm());
+    Serial.print(motor_azm.getPwm());
     Serial.print(",");
-    Serial.print(motor2.getPwm());
+    Serial.print(motor_elv.getPwm());
     Serial.print(",");
-    Serial.print(motor1.getInaValue());
+    Serial.print(motor_azm.getInaValue());
     Serial.print(",");
-    Serial.print(motor1.getInbValue());
+    Serial.print(motor_azm.getInbValue());
     Serial.print(",");
-    Serial.print(motor2.getInaValue());
+    Serial.print(motor_elv.getInaValue());
     Serial.print(",");
-    Serial.print(motor2.getInbValue());
+    Serial.print(motor_elv.getInbValue());
 
     Serial.print(",");
-    Serial.print(angle1);
+    Serial.print(sensor_azm.getAngle());
     Serial.print(",");
-    Serial.print(angle2);
+    Serial.print(sensor_elv.getAngle());
 
     Serial.println();
 
-    requestSensorValue();
-    requestSoftSensorValue();
+    sensor_azm.requestSensorValue();
+    sensor_elv.requestSensorValue();
+
     controller();  
 }
 
@@ -168,13 +130,19 @@ void accept_command(const char *buffer) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            motor1.setMotion(value);
+            if (value == 0) {
+                controller_enabled = false;
+            }
+            motor_azm.setMotion(value);
         }
         else if (line.startsWith("motion2")) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            motor2.setMotion(value);
+            if (value == 0) {
+                controller_enabled = false;
+            }
+            motor_elv.setMotion(value);
         }
         else if (line.startsWith("con")) {
             controller_enabled = !controller_enabled;

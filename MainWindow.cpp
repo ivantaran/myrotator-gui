@@ -13,6 +13,8 @@ MainWindow::MainWindow() {
 
     stateWidget[0].setupUi(widget.widgetState1);
     stateWidget[1].setupUi(widget.widgetState2);
+    
+    stateWidget[0].tableWidget->setCellWidget(1, 1, new QPushButton("ololo"));
 
     updatePortListSlot();
     connect(widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));

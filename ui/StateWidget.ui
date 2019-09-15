@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>880</width>
-    <height>215</height>
+    <width>912</width>
+    <height>382</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,10 @@
         <item>
          <widget class="QLabel" name="labelDiag">
           <property name="text">
-           <string>TextLabel</string>
+           <string>0</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
@@ -41,7 +44,10 @@
         <item>
          <widget class="QLabel" name="labelCurrentSensor">
           <property name="text">
-           <string>TextLabel</string>
+           <string>0</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
@@ -230,6 +236,22 @@
        </spacer>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="tableWidget">
+     <property name="rowCount">
+      <number>3</number>
+     </property>
+     <property name="columnCount">
+      <number>3</number>
+     </property>
+     <row/>
+     <row/>
+     <row/>
+     <column/>
+     <column/>
+     <column/>
     </widget>
    </item>
    <item>

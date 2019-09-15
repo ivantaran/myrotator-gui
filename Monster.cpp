@@ -40,8 +40,8 @@ void Monster::readyReadSlot() {
                 uint inb2 = list.at(9).toUInt(&ok) & 0x01;
                 m_motionState[0] = ina1 | (inb1 << 1);
                 m_motionState[1] = ina2 | (inb2 << 1);
-                m_angle[0] = (qreal)list.at(10).toUInt(&ok) / 2048.0 * M_PI;
-                m_angle[1] = (qreal)list.at(11).toUInt(&ok) / 2048.0 * M_PI;
+                m_angle[0] = (qreal)list.at(10).toInt(&ok) / 4096.0 * M_PI;
+                m_angle[1] = (qreal)list.at(11).toInt(&ok) / 4096.0 * M_PI;
             }
         }
     }
