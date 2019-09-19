@@ -16,9 +16,11 @@ public:
     Monster();
     virtual ~Monster();
     uint getPwm(uint index);
-    uint getCurrentSensor(uint index);
+    uint getCurrentAdc(uint index);
+    qreal getCurrentAmp(uint index);
     uint getDiag(uint index);
-    uint getMotionState(uint index);
+    uint getDirection(uint index);
+    const QString getDirectionString(uint index);
     qreal getAngle(uint index);
     void setMotion(uint index, int value);
     void setController(int kp, int ki);
@@ -28,7 +30,7 @@ private:
     uint m_pwm[2] = { 0 };
     uint m_currentSensor[2] = { 0 };
     uint m_diag[2] = { 0 };
-    uint m_motionState[2] = { 0 };
+    uint m_direction[2] = { 0 };
     qreal m_angle[2] = { 0.0 };
 
 private slots:

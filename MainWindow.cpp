@@ -14,18 +14,17 @@ MainWindow::MainWindow() {
     stateWidget[0].setupUi(widget.widgetState1);
     stateWidget[1].setupUi(widget.widgetState2);
     
-    stateWidget[0].tableWidget->setCellWidget(1, 1, new QPushButton("ololo"));
-
     updatePortListSlot();
     connect(widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
     connect(widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
-    connect(stateWidget[0].buttonSetController, SIGNAL(clicked()), this, SLOT(setControllerSlot()));
-    connect(stateWidget[0].buttonSetAngle, SIGNAL(clicked()), this, SLOT(setAngleSlot()));
+    connect(stateWidget[0].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
+    connect(stateWidget[0].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
+    connect(stateWidget[0].leAngle, SIGNAL(editingFinished()), this, SLOT(setAngleSlot()));
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
-    connect(stateWidget[0].spinBoxMotion, SIGNAL(valueChanged(int)), this, SLOT(setMotion1Slot(int)));
-    connect(stateWidget[1].spinBoxMotion, SIGNAL(valueChanged(int)), this, SLOT(setMotion2Slot(int)));
+    connect(stateWidget[0].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotion1Slot()));
+    connect(stateWidget[1].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotion2Slot()));
     connect(stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion1Slot()));
     connect(stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion2Slot()));
 }
@@ -87,16 +86,18 @@ void MainWindow::updatedStateSlot(const QString &line) {
     widget.textMonitor->appendPlainText(line);
 
     for (uint i = 0; i < 2; i++) {
-        stateWidget[i].labelCurrentSensor->setText(
-                QString("%0").arg(m_monster.getCurrentSensor(i))
+        stateWidget[i].labelCurrentValue->setText(
+                QString("%0").arg(m_monster.getCurrentAmp(i), 4, 'f', 1)
             );
-        stateWidget[i].labelPwm->setText(
-                QString("%0").arg(m_monster.getPwm(i))
+        if (!stateWidget[i].lePwm->hasFocus()) {
+            stateWidget[i].lePwm->setText(
+                    QString("%0").arg(m_monster.getPwm(i))
+                );
+        }
+        stateWidget[i].labelDirectionValue->setText(
+                m_monster.getDirectionString(i)
             );
-        stateWidget[i].labelMotion->setText(
-                QString("%0").arg(m_monster.getMotionState(i))
-            );
-        stateWidget[i].labelDiag->setText(
+        stateWidget[i].labelDiagValue->setText(
                 QString("%0").arg(m_monster.getDiag(i))
             );
     }
@@ -122,12 +123,12 @@ void MainWindow::setMotion2Slot(int value) {
 
 void MainWindow::brakeMotion1Slot() {
     m_monster.setMotion(0, 0);
-    stateWidget[0].spinBoxMotion->setValue(0);
+    stateWidget[0].lePwm->setText("0");
 }
 
 void MainWindow::brakeMotion2Slot() {
     m_monster.setMotion(1, 0);
-    stateWidget[1].spinBoxMotion->setValue(0);
+    stateWidget[1].lePwm->setText("0");
 }
 
 void MainWindow::setControllerSlot() {

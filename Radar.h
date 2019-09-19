@@ -14,9 +14,14 @@ public:
     void setSensor(qreal azm, qreal elv, bool visible);    
 protected:    
     virtual void paintEvent(QPaintEvent*);
-    
+    virtual void resizeEvent(QResizeEvent *event);    
+
 private:
-    
+    QColor m_colorBackground;
+    QColor m_colorGrid;
+    QColor m_colorItem;
+    QColor m_colorItemBorder;
+
     class RadarItem{
     public:
         RadarItem() {    

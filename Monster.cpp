@@ -38,8 +38,8 @@ void Monster::readyReadSlot() {
                 uint inb1 = list.at(7).toUInt(&ok) & 0x01;
                 uint ina2 = list.at(8).toUInt(&ok) & 0x01;
                 uint inb2 = list.at(9).toUInt(&ok) & 0x01;
-                m_motionState[0] = ina1 | (inb1 << 1);
-                m_motionState[1] = ina2 | (inb2 << 1);
+                m_direction[0] = ina1 | (inb1 << 1);
+                m_direction[1] = ina2 | (inb2 << 1);
                 m_angle[0] = (qreal)list.at(10).toInt(&ok) / 4096.0 * M_PI;
                 m_angle[1] = (qreal)list.at(11).toInt(&ok) / 4096.0 * M_PI;
             }
@@ -51,16 +51,45 @@ uint Monster::getPwm(uint index) {
     return index < 2 ? m_pwm[index] : 0;
 }
 
-uint Monster::getCurrentSensor(uint index) {
+uint Monster::getCurrentAdc(uint index) {
     return index < 2 ? m_currentSensor[index] : 0;
+}
+
+qreal Monster::getCurrentAmp(uint index) {
+    qreal voltage = 5.0 / 1024.0 * (qreal)getCurrentAdc(index);
+    qreal current = voltage / 1500.0;
+    current *= 4700.0 / 700.0 * 1500.0;
+    return current;
 }
 
 uint Monster::getDiag(uint index) {
     return index < 2 ? m_diag[index] : 0;
 }
 
-uint Monster::getMotionState(uint index) {
-    return index < 2 ? m_motionState[index] : 0;
+uint Monster::getDirection(uint index) {
+    return index < 2 ? m_direction[index] : 0;
+}
+
+const QString Monster::getDirectionString(uint index) {
+    QString result;
+    switch (getDirection(index)) {
+    case 0:
+        result = "brakedown";
+        break;
+    case 1:
+        result = "positive";
+        break;
+    case 2:
+        result = "negative";
+        break;
+    case 3:
+        result = "breakup";
+        break;
+    default:
+        result = "unknown";
+        break;
+    }
+    return result;
 }
 
 qreal Monster::getAngle(uint index) {

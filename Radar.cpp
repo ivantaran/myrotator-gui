@@ -9,6 +9,11 @@ Radar::~Radar() {
 void Radar::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event)
 
+    m_colorBackground = Qt::black;
+    m_colorGrid = Qt::lightGray;
+    m_colorItem = Qt::yellow;
+    m_colorItemBorder = Qt::white;
+
     const qreal scale0 = 0.14644660940672623779957781894758;
     const qreal scale1 = (1.0 - scale0);
     
@@ -21,7 +26,7 @@ void Radar::paintEvent(QPaintEvent* event) {
     
     QPen pen = p.pen();
     pen.setWidth(1);
-    p.setPen(QColor("black"));
+    p.setPen(m_colorGrid);
     
     QPainterPath path;
     qreal rx = p.device()->width();
@@ -30,7 +35,7 @@ void Radar::paintEvent(QPaintEvent* event) {
     QPointF point(0.5 * rx, 0.5 * ry);
     
     path.addEllipse(point, 0.50 * rx, 0.50 * ry);
-    p.fillPath(path, QColor("white"));
+    p.fillPath(path, m_colorBackground);
     path.addEllipse(point, 0.25 * rx, 0.25 * ry);
     p.drawPath(path);
 
@@ -106,6 +111,13 @@ void Radar::paintEvent(QPaintEvent* event) {
 //     }
 // }
 
+void Radar::resizeEvent(QResizeEvent *event) {
+    Q_UNUSED(event)
+    
+    int size = qMin(this->width(), this->height());
+    this->resize(size, size);
+}
+
 void Radar::drawSensor(QPainter *p) {
     
     bool visible;
@@ -113,7 +125,7 @@ void Radar::drawSensor(QPainter *p) {
     
     qreal w = (qreal)p->device()->width();
     qreal h = (qreal)p->device()->height();
-    qreal r = qMin(w, h) * 0.075;
+    qreal r = qMin(w, h) * 0.033;
 
     QFont font = p->font();
     font.setPointSizeF(r);
@@ -140,18 +152,18 @@ void Radar::drawSensor(QPainter *p) {
         path.addEllipse(QPointF(x, y), r, r);
 
         switch (visible) {
-            case true:
-                p->setPen(QColor("black"));
-                p->fillPath(path, QColor("lightgreen"));
-                break;
-            case false:
-                p->fillPath(path, QColor("lightred"));
-                p->setPen(QColor("gray"));
-                break;
-            default:
-                p->fillPath(path, QColor("lightyellow"));
-                p->setPen(QColor("gray"));
-                break;
+        case true:
+            p->setPen(m_colorItemBorder);
+            p->fillPath(path, m_colorItem);
+            break;
+        case false:
+            p->fillPath(path, QColor("lightred"));
+            p->setPen(QColor("gray"));
+            break;
+        default:
+            p->fillPath(path, QColor("lightyellow"));
+            p->setPen(QColor("gray"));
+            break;
         }
     }
 }
