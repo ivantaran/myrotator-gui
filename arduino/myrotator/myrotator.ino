@@ -1,21 +1,40 @@
 
 #include "MyMotor.h"
 #include "As5601.h"
+#include "Endstop.h"
 
-MyMotor motor_azm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
-MyMotor motor_elv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
+MyMotor motorAzm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
+MyMotor motorElv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
 
-As5601 sensor_azm = As5601(true);
-As5601 sensor_elv = As5601(false);
+As5601 sensorAzm = As5601(true);
+As5601 sensorElv = As5601(false);
+
+Endstop endstopAzm = Endstop(10);
+Endstop endstopElv = Endstop(11);
 
 int ms = 100;
 
 unsigned long t0 = 0;
 
 bool controller_enabled = false;
+bool moveToHome = false;
+
 long ctrl_ki = 1000;
 long ctrl_kp = 30;
 long ctrl_angle = 0;
+
+bool homing() {
+    static bool isEndAzm = false;
+
+    if (endstopAzm.isEnd()) {
+        motorAzm.setMotion(0);
+        isEndAzm = true;
+    } else if (!isEndAzm) {
+        motorAzm.setMotion(-50);
+    }
+
+    return isEndAzm;
+}
 
 void controller(void) {
     long error1 = 0;
@@ -23,7 +42,7 @@ void controller(void) {
     static long error0 = 0;
     static long value = 0;
     
-    if (!controller_enabled || sensor_azm.isValid()) {
+    if (!controller_enabled || sensorAzm.isValid()) {
         error0 = 0;
         error1 = 0;
         value = 0;
@@ -31,15 +50,8 @@ void controller(void) {
     }
     
     error1 = error0;
-    error0 = ctrl_angle - sensor_azm.getAngle();
+    error0 = ctrl_angle - sensorAzm.getAngle();
     
-    // if (error0 > 2047) {
-    //     error0 -= 4096;
-    // }
-    // else if (error0 < -2047) {
-    //     error0 += 4096;
-    // }
-
     value -= ((ctrl_ki + ctrl_kp) * error0 - ctrl_ki * error1);
     
     if (value > 511 * amp) {
@@ -48,24 +60,8 @@ void controller(void) {
     else if (value < -511 * amp) {
         value = -511 * amp;
     }
-    // else if (value < 50 * amp && value > 0) {
-    //     if (abs(error0) > 4) {
-    //         value = 50 * amp;
-    //     }
-    //     else {
-    //         value = 0;
-    //     }
-    // }
-    // else if (value > -50 * amp && value < 0) {
-    //     if (abs(error0) > 4) {
-    //         value = -50 * amp;
-    //     }
-    //     else {
-    //         value = 0;
-    //     }
-    // }
 
-    motor_azm.setMotion(value / amp);
+    motorAzm.setMotion(value / amp);
     Serial.print(value / amp);
     Serial.print(',');
     Serial.print(ctrl_kp);
@@ -87,35 +83,35 @@ void setup() {
 
 void timerEvent() {
     Serial.print("state:");
-    Serial.print(motor_azm.getCurrentSensorValue());
+    Serial.print(motorAzm.getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motor_elv.getCurrentSensorValue());
+    Serial.print(motorElv.getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motor_azm.getEnDiagValue());
+    Serial.print(motorAzm.getEnDiagValue());
     Serial.print(",");
-    Serial.print(motor_elv.getEnDiagValue());
+    Serial.print(motorElv.getEnDiagValue());
     Serial.print(",");
-    Serial.print(motor_azm.getPwm());
+    Serial.print(motorAzm.getPwm());
     Serial.print(",");
-    Serial.print(motor_elv.getPwm());
+    Serial.print(motorElv.getPwm());
     Serial.print(",");
-    Serial.print(motor_azm.getInaValue());
+    Serial.print(motorAzm.getInaValue());
     Serial.print(",");
-    Serial.print(motor_azm.getInbValue());
+    Serial.print(motorAzm.getInbValue());
     Serial.print(",");
-    Serial.print(motor_elv.getInaValue());
+    Serial.print(motorElv.getInaValue());
     Serial.print(",");
-    Serial.print(motor_elv.getInbValue());
+    Serial.print(motorElv.getInbValue());
 
     Serial.print(",");
-    Serial.print(sensor_azm.getAngle());
+    Serial.print(sensorAzm.getAngle());
     Serial.print(",");
-    Serial.print(sensor_elv.getAngle());
+    Serial.print(sensorElv.getAngle());
 
     Serial.println();
 
-    sensor_azm.requestSensorValue();
-    sensor_elv.requestSensorValue();
+    sensorAzm.requestSensorValue();
+    sensorElv.requestSensorValue();
 
     controller();  
 }
@@ -133,7 +129,7 @@ void accept_command(const char *buffer) {
             if (value == 0) {
                 controller_enabled = false;
             }
-            motor_azm.setMotion(value);
+            motorAzm.setMotion(value);
         }
         else if (line.startsWith("motion2")) {
             line = line.substring(7);
@@ -142,10 +138,13 @@ void accept_command(const char *buffer) {
             if (value == 0) {
                 controller_enabled = false;
             }
-            motor_elv.setMotion(value);
+            motorElv.setMotion(value);
         }
         else if (line.startsWith("con")) {
             controller_enabled = !controller_enabled;
+        }
+        else if (line.startsWith("homing")) {
+            moveToHome = !moveToHome;
         }
         else if (line.startsWith("ctrl_kp")) {
             line = line.substring(7);
@@ -190,6 +189,10 @@ void loop() {
     if (millis() - t0 >= TIMER_PERIOD) {
         t0 += TIMER_PERIOD;
         timerEvent();
+    }
+    
+    if (moveToHome) {
+        moveToHome = !homing();
     }
 
     accept_serial();

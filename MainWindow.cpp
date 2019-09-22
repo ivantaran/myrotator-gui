@@ -18,6 +18,7 @@ MainWindow::MainWindow() {
     connect(widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
     connect(widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
+    connect(widget.buttonHoming, SIGNAL(clicked()), &m_monster, SLOT(homingSlot()));
     connect(stateWidget[0].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
     connect(stateWidget[0].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
     connect(stateWidget[0].leAngle, SIGNAL(editingFinished()), this, SLOT(setAngleSlot()));

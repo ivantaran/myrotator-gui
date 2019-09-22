@@ -110,6 +110,9 @@ void Monster::setAngle(int angle) {
 }
 
 void Monster::testSlot() {
-    qWarning() << "testSlot";
     write("set con\n");
+}
+
+void Monster::homingSlot() {
+    write("set homing\n");
 }

@@ -38,6 +38,7 @@ private slots:
 
 public slots:
     void testSlot();
+    void homingSlot();
 
 signals:
     void updatedState(const QString &line);
