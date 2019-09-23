@@ -30,7 +30,7 @@ bool homing() {
         motorAzm.setMotion(0);
         isEndAzm = true;
     } else if (!isEndAzm) {
-        motorAzm.setMotion(-50);
+        motorAzm.setMotion(motorAzm.getPwmHoming());
     }
 
     return isEndAzm;

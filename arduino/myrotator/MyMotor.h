@@ -23,18 +23,19 @@
 class MyMotor {
 public:    
     
-    MyMotor(uint8_t pin_ina, uint8_t pin_inb, uint8_t pin_cs, uint8_t pin_en, uint8_t pin_pwm) {
-        m_pin_ina = pin_ina;
-        m_pin_inb = pin_inb;
-        m_pin_cs = pin_cs;
-        m_pin_en = pin_en;
-        m_pin_pwm = pin_pwm;
+    MyMotor(uint8_t pinIna, uint8_t pinInb, uint8_t pinCs, uint8_t pinEn, uint8_t pinPwm) {
+        m_pinIna = pinIna;
+        m_pinInb = pinInb;
+        m_pinCs = pinCs;
+        m_pinEn = pinEn;
+        m_pinPwm = pinPwm;
 
-        pinMode(m_pin_ina, OUTPUT);
-        pinMode(m_pin_inb, OUTPUT);
-        pinMode(m_pin_pwm, OUTPUT);
+        pinMode(m_pinIna, OUTPUT);
+        pinMode(m_pinInb, OUTPUT);
+        pinMode(m_pinPwm, OUTPUT);
         
         m_pwm = 0;
+        m_pwmHoming = 0;
 
         this->setMotion(0);
     }
@@ -43,6 +44,10 @@ public:
     
     inline uint8_t getPwm() {
         return m_pwm;
+    }
+
+    inline long getPwmHoming() {
+        return m_pwmHoming;
     }
 
     void setMotion(long value) {
@@ -78,46 +83,47 @@ public:
             m_pwm = 0;
             this->brake();
         }
-        analogWrite(m_pin_pwm, m_pwm);
+        analogWrite(m_pinPwm, m_pwm);
     }
     
     inline int getCurrentSensorValue() {
-        return analogRead(m_pin_cs);
+        return analogRead(m_pinCs);
     }
 
     inline int getEnDiagValue() {
-        return digitalRead(m_pin_en);
+        return digitalRead(m_pinEn);
     }
 
     inline int getInaValue() {
-        return digitalRead(m_pin_ina);
+        return digitalRead(m_pinIna);
     }
 
     inline int getInbValue() {
-        return digitalRead(m_pin_inb);
+        return digitalRead(m_pinInb);
     }
 
 private:
-    uint8_t m_pin_ina;
-    uint8_t m_pin_inb; 
-    uint8_t m_pin_cs;
-    uint8_t m_pin_en;
-    uint8_t m_pin_pwm;
+    uint8_t m_pinIna;
+    uint8_t m_pinInb; 
+    uint8_t m_pinCs;
+    uint8_t m_pinEn;
+    uint8_t m_pinPwm;
     uint8_t m_pwm;
+    long m_pwmHoming;
 
     void brake() {
-        digitalWrite(m_pin_ina, LOW);
-        digitalWrite(m_pin_inb, LOW);
+        digitalWrite(m_pinIna, LOW);
+        digitalWrite(m_pinInb, LOW);
     }
     
     void setMotionRight() {
-        digitalWrite(m_pin_ina, HIGH);
-        digitalWrite(m_pin_inb, LOW);
+        digitalWrite(m_pinIna, HIGH);
+        digitalWrite(m_pinInb, LOW);
     }
 
     void setMotionLeft() {
-        digitalWrite(m_pin_ina, LOW);
-        digitalWrite(m_pin_inb, HIGH);
+        digitalWrite(m_pinIna, LOW);
+        digitalWrite(m_pinInb, HIGH);
     }
 
 };

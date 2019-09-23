@@ -20,8 +20,9 @@ public:
     MainWindow();
     virtual ~MainWindow();
 private:
-    Ui::MainWindow widget;
-    Ui::StateWidget stateWidget[2];
+    Ui::MainWindow m_widget;
+    Ui::StateWidget m_stateWidget[2];
+    QLabel m_labelState;
     Monster m_monster;
     Radar m_radar;
 
@@ -31,8 +32,8 @@ private slots:
     void closePortSlot();
     void updateGuiSlot();
     void updatedStateSlot(const QString &line);
-    void setMotion1Slot(int value);
-    void setMotion2Slot(int value);
+    void setMotion1Slot();
+    void setMotion2Slot();
     void setControllerSlot();
     void setAngleSlot();
     void brakeMotion1Slot();
