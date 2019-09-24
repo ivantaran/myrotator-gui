@@ -6,8 +6,8 @@
 MyMotor motorAzm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
 MyMotor motorElv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
 
-As5601 sensorAzm = As5601(true);
-As5601 sensorElv = As5601(false);
+As5601 sensorAzm = As5601(As5601::Hardware);
+As5601 sensorElv = As5601(As5601::Software);
 
 Endstop endstopAzm = Endstop(10);
 Endstop endstopElv = Endstop(11);
@@ -75,6 +75,15 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     Serial.begin(UART_SPEED);
+    
+    motorAzm.begin();
+    motorElv.begin();
+    
+    endstopAzm.begin();
+    endstopElv.begin();
+
+    sensorAzm.begin();
+    sensorElv.begin();
 
     t0 = millis();
   
@@ -108,12 +117,18 @@ void timerEvent() {
     Serial.print(",");
     Serial.print(sensorElv.getAngle());
 
+
+    Serial.print(",");
+    Serial.print(endstopAzm.isEnd());
+    Serial.print(",");
+    Serial.print(endstopElv.isEnd());
+
     Serial.println();
 
     sensorAzm.requestSensorValue();
     sensorElv.requestSensorValue();
 
-    controller();  
+    controller();
 }
 
 void accept_command(const char *buffer) {

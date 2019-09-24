@@ -19,16 +19,11 @@ SoftWire softWire = SoftWire();
 
 class As5601 {
 public:
-    As5601(bool isHardware) {
-        m_isHardware = isHardware;
-        
-        if (m_isHardware) {
-            Wire.begin();
-        }
-        else {
-            softWire.begin();
-        }
+    typedef enum { Hardware = 0, Software = 1 } As5601Type;
 
+    As5601(const As5601Type &type) {
+        m_isHardware = (type == As5601::Hardware);
+        
         m_turnover = 0;
         m_rawAngle[0] = -1;
         m_rawAngle[1] = -1;
@@ -37,10 +32,19 @@ public:
         m_isValid = false;
     }
 
-    ~As5601() {
+    virtual ~As5601() {
 
     }
     
+    void begin() {
+        if (m_isHardware) {
+            Wire.begin();
+        }
+        else {
+            softWire.begin();
+        }
+    }
+
     void setAngleOffset(int16_t offset) {
         m_angleOffset = offset;
     }
@@ -61,26 +65,32 @@ public:
     }
 
     void requestSensorValue() {
+        int16_t value = 0;
+        uint8_t n = 0;
+
         if (m_isHardware) {
             Wire.beginTransmission(AS5601_ADDR);
             Wire.write(byte(AS5601_ANGLE_ADDR));
             Wire.endTransmission();
             Wire.requestFrom(AS5601_ADDR, 2);
+
+            while (Wire.available()) {
+                byte c = Wire.read();
+                value = (value << 8) | c;
+                n++;
+            }
         }
         else {
             softWire.beginTransmission(AS5601_ADDR);
             softWire.write(byte(AS5601_ANGLE_ADDR));
             softWire.endTransmission();
             softWire.requestFrom(AS5601_ADDR, 2);
-        }
 
-        int16_t value = 0;
-        uint8_t n = 0;
-        
-        while (Wire.available()) {
-            byte c = Wire.read();
-            value = (value << 8) | c;
-            n++;
+            while (softWire.available()) {
+                byte c = softWire.read();
+                value = (value << 8) | c;
+                n++;
+            }
         }
         
         m_rawAngle[1] = m_rawAngle[0];

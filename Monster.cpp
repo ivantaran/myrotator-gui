@@ -27,7 +27,7 @@ void Monster::readyReadSlot() {
         if (m_stateLine.contains("state:")) {
             m_stateLine = m_stateLine.remove("state:");
             QStringList list = m_stateLine.split(QChar(','));
-            if (list.count() >= 12) {
+            if (list.count() >= 14) {
                 m_currentSensor[0] = list.at(0).toUInt(&ok);
                 m_currentSensor[1] = list.at(1).toUInt(&ok);
                 m_diag[0] = list.at(2).toUInt(&ok);
@@ -42,6 +42,8 @@ void Monster::readyReadSlot() {
                 m_direction[1] = ina2 | (inb2 << 1);
                 m_angle[0] = (qreal)list.at(10).toInt(&ok) / 4096.0 * M_PI;
                 m_angle[1] = (qreal)list.at(11).toInt(&ok) / 4096.0 * M_PI;
+                m_endstop[0] = list.at(12).toUInt(&ok) > 0;
+                m_endstop[1] = list.at(13).toUInt(&ok) > 0;
             }
         }
     }
@@ -94,6 +96,10 @@ const QString Monster::getDirectionString(uint index) {
 
 qreal Monster::getAngle(uint index) {
     return index < 2 ? m_angle[index] : 0.0;
+}
+
+bool Monster::isEndstop(uint index) {
+    return index < 2 ? m_endstop[index] : true;
 }
 
 void Monster::setMotion(uint index, int value) {

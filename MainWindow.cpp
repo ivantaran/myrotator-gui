@@ -101,6 +101,7 @@ void MainWindow::updatedStateSlot(const QString &line) {
         m_stateWidget[i].labelDiagValue->setText(
                 QString("%0").arg(m_monster.getDiag(i))
             );
+        m_stateWidget[i].labelEndstopValue->setText(m_monster.isEndstop(i) ? "true" : "false");
     }
     
     m_radar.setSensor(m_monster.getAngle(0), m_monster.getAngle(1), true);

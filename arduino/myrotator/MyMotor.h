@@ -22,7 +22,6 @@
 
 class MyMotor {
 public:    
-    
     MyMotor(uint8_t pinIna, uint8_t pinInb, uint8_t pinCs, uint8_t pinEn, uint8_t pinPwm) {
         m_pinIna = pinIna;
         m_pinInb = pinInb;
@@ -30,18 +29,19 @@ public:
         m_pinEn = pinEn;
         m_pinPwm = pinPwm;
 
-        pinMode(m_pinIna, OUTPUT);
-        pinMode(m_pinInb, OUTPUT);
-        pinMode(m_pinPwm, OUTPUT);
-        
         m_pwm = 0;
         m_pwmHoming = 0;
-
-        this->setMotion(0);
     }
     
     virtual ~MyMotor() {}
     
+    void begin() {
+        pinMode(m_pinIna, OUTPUT);
+        pinMode(m_pinInb, OUTPUT);
+        pinMode(m_pinPwm, OUTPUT);
+        this->setMotion(0);
+    }
+
     inline uint8_t getPwm() {
         return m_pwm;
     }

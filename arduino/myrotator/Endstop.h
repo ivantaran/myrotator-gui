@@ -6,14 +6,16 @@ class Endstop {
 public:
     Endstop(uint8_t pin) {
         m_pin = pin;
-        pinMode(pin, INPUT_PULLUP);
-
     }
 
-    ~Endstop() {
+    virtual ~Endstop() {
 
     }
     
+    void begin() {
+        pinMode(m_pin, INPUT_PULLUP);
+    }
+
     bool isEnd() {
         return (digitalRead(m_pin) == HIGH);
     }

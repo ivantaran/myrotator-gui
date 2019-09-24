@@ -22,16 +22,19 @@ public:
     uint getDirection(uint index);
     const QString getDirectionString(uint index);
     qreal getAngle(uint index);
+    bool isEndstop(uint index);
     void setMotion(uint index, int value);
     void setController(int kp, int ki);
     void setAngle(int angle);
+
 private:
     QString m_stateLine;
-    uint m_pwm[2] = { 0 };
-    uint m_currentSensor[2] = { 0 };
-    uint m_diag[2] = { 0 };
-    uint m_direction[2] = { 0 };
-    qreal m_angle[2] = { 0.0 };
+    uint m_pwm[2] = { 0, 0 };
+    uint m_currentSensor[2] = { 0, 0 };
+    uint m_diag[2] = { 0, 0 };
+    uint m_direction[2] = { 0, 0 };
+    qreal m_angle[2] = { 0.0, 0.0 };
+    bool m_endstop[2] = { true, true };
 
 private slots:
     void readyReadSlot();
