@@ -9,25 +9,37 @@
 
 MainWindow::MainWindow() {
     m_widget.setupUi(this);
-    m_widget.groupBox_2->layout()->addWidget(&m_radar);
+    m_widget.widget_2->layout()->addWidget(&m_radar);
     m_widget.statusbar->addWidget(&m_labelState);
     m_stateWidget[0].setupUi(m_widget.widgetState1);
     m_stateWidget[1].setupUi(m_widget.widgetState2);
     
+    m_doubleValidator.setLocale(QLocale::C);
+    m_stateWidget[0].leTarget->setValidator(&m_doubleValidator);
+    m_stateWidget[1].leTarget->setValidator(&m_doubleValidator);
+
     updatePortListSlot();
     connect(m_widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(m_widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
     connect(m_widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
     connect(m_widget.buttonHoming, SIGNAL(clicked()), &m_monster, SLOT(homingSlot()));
-    connect(m_stateWidget[0].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
-    connect(m_stateWidget[0].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerSlot()));
-    connect(m_stateWidget[0].leTarget, SIGNAL(editingFinished()), this, SLOT(setAngleSlot()));
+
+    connect(m_stateWidget[0].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerAzmSlot()));
+    connect(m_stateWidget[0].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerAzmSlot()));
+    connect(m_stateWidget[0].leKd, SIGNAL(editingFinished()), this, SLOT(setControllerAzmSlot()));
+    connect(m_stateWidget[0].leTarget, SIGNAL(editingFinished()), this, SLOT(setTargetAzmSlot()));
+
+    connect(m_stateWidget[1].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerElvSlot()));
+    connect(m_stateWidget[1].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerElvSlot()));
+    connect(m_stateWidget[1].leKd, SIGNAL(editingFinished()), this, SLOT(setControllerElvSlot()));
+    connect(m_stateWidget[1].leTarget, SIGNAL(editingFinished()), this, SLOT(setTargetElvSlot()));
+
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
-    connect(m_stateWidget[0].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotion1Slot()));
-    connect(m_stateWidget[1].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotion2Slot()));
-    connect(m_stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion1Slot()));
-    connect(m_stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotion2Slot()));
+    connect(m_stateWidget[0].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionAzmSlot()));
+    connect(m_stateWidget[1].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionElvSlot()));
+    connect(m_stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionAzmSlot()));
+    connect(m_stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionElvSlot()));
 }
 
 MainWindow::~MainWindow() {
@@ -115,42 +127,65 @@ void MainWindow::closePortSlot() {
     updateGuiSlot();
 }
 
-void MainWindow::setMotion1Slot() {
+void MainWindow::setMotionAzmSlot() {
     bool ok;
     int value = m_stateWidget[0].lePwm->text().toInt(&ok);
     m_monster.setMotion(0, value);
 }
 
-void MainWindow::setMotion2Slot() {
+void MainWindow::setMotionElvSlot() {
     bool ok;
     int value = m_stateWidget[1].lePwm->text().toInt(&ok);
     m_monster.setMotion(1, value);
 }
 
-void MainWindow::brakeMotion1Slot() {
+void MainWindow::brakeMotionAzmSlot() {
     m_monster.setMotion(0, 0);
     m_stateWidget[0].lePwm->setText("0");
 }
 
-void MainWindow::brakeMotion2Slot() {
+void MainWindow::brakeMotionElvSlot() {
     m_monster.setMotion(1, 0);
     m_stateWidget[1].lePwm->setText("0");
 }
 
-void MainWindow::setControllerSlot() {
+void MainWindow::setController(uint index) {
     bool ok_kp;
     bool ok_ki;
-    int kp = m_stateWidget[0].leKp->text().toInt(&ok_kp);
-    int ki = m_stateWidget[0].leKi->text().toInt(&ok_ki);
-    if (ok_kp && ok_ki) {
-        m_monster.setController(kp, ki);
+    bool ok_kd;
+    bool ok_rate;
+    int kp = m_stateWidget[index].leKp->text().toInt(&ok_kp);
+    int ki = m_stateWidget[index].leKi->text().toInt(&ok_ki);
+    int kd = m_stateWidget[index].leKd->text().toInt(&ok_kd);
+    int rate = m_stateWidget[index].leRateMs->text().toInt(&ok_rate);
+    if (ok_kp && ok_ki && ok_kd && ok_rate) {
+        ki = (ki * rate) / 1000;
+        kd = (kd * 1000) / rate;
+        m_monster.setController(index, kp, ki, kd);
     }
 }
 
-void MainWindow::setAngleSlot() {
+void MainWindow::setTarget(uint index) {
     bool ok;
-    int angle = m_stateWidget[0].leTarget->text().toInt(&ok);
+    double angle = m_stateWidget[index].leTarget->text().toDouble(&ok);
+
     if (ok) {
-        m_monster.setAngle(angle);
+        m_monster.setTargetDegrees(index, angle);
     }
+}
+
+void MainWindow::setControllerAzmSlot() {
+    setController(0);
+}
+
+void MainWindow::setControllerElvSlot() {
+    setController(1);
+}
+
+void MainWindow::setTargetAzmSlot() {
+    setTarget(0);
+}
+
+void MainWindow::setTargetElvSlot() {
+    setTarget(1);
 }

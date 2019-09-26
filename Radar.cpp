@@ -132,7 +132,7 @@ void Radar::drawSensor(QPainter *p) {
     font.setFamily("Consolas");
     p->setFont(font);
     
-    rr = (1.0 / 2.0 - m_sensor.elv / M_PI / 2.0);
+    rr = (0.5 - m_sensor.elv / M_PI);
     if (m_sensor.visible) {
         xx = rr * qCos(m_sensor.azm - M_PI_2);
         yy = rr * qSin(m_sensor.azm - M_PI_2);

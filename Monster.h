@@ -24,8 +24,10 @@ public:
     qreal getAngle(uint index);
     bool isEndstop(uint index);
     void setMotion(uint index, int value);
-    void setController(int kp, int ki);
-    void setAngle(int angle);
+    void setController(uint index, int kp, int ki, int kd);
+    void setTargetLinear(uint index, int angle);
+    void setTargetRadians(uint index, qreal angle);
+    void setTargetDegrees(uint index, qreal angle);
 
 private:
     QString m_stateLine;

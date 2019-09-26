@@ -2,6 +2,7 @@
 #include "MyMotor.h"
 #include "As5601.h"
 #include "Endstop.h"
+#include "Controller.h"
 
 MyMotor motorAzm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
 MyMotor motorElv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
@@ -12,16 +13,15 @@ As5601 sensorElv = As5601(As5601::Software);
 Endstop endstopAzm = Endstop(10);
 Endstop endstopElv = Endstop(11);
 
+Controller controllerAzm = Controller();
+Controller controllerElv = Controller();
+
 int ms = 100;
 
 unsigned long t0 = 0;
 
 bool controller_enabled = false;
 bool moveToHome = false;
-
-long ctrl_ki = 1000;
-long ctrl_kp = 30;
-long ctrl_angle = 0;
 
 bool homing() {
     static bool isEndAzm = false;
@@ -34,41 +34,6 @@ bool homing() {
     }
 
     return isEndAzm;
-}
-
-void controller(void) {
-    long error1 = 0;
-    long amp = 1000;
-    static long error0 = 0;
-    static long value = 0;
-    
-    if (!controller_enabled || sensorAzm.isValid()) {
-        error0 = 0;
-        error1 = 0;
-        value = 0;
-        return;
-    }
-    
-    error1 = error0;
-    error0 = ctrl_angle - sensorAzm.getAngle();
-    
-    value -= ((ctrl_ki + ctrl_kp) * error0 - ctrl_ki * error1);
-    
-    if (value > 511 * amp) {
-        value = 511 * amp;
-    }
-    else if (value < -511 * amp) {
-        value = -511 * amp;
-    }
-
-    motorAzm.setMotion(value / amp);
-    Serial.print(value / amp);
-    Serial.print(',');
-    Serial.print(ctrl_kp);
-    Serial.print(',');
-    Serial.print(ctrl_ki);
-    Serial.print(',');
-    Serial.println(error0);
 }
 
 void setup() {
@@ -84,6 +49,9 @@ void setup() {
 
     sensorAzm.begin();
     sensorElv.begin();
+    
+    controllerAzm.setMode(Controller::Pid);
+    controllerElv.setMode(Controller::Pid);
 
     t0 = millis();
   
@@ -128,7 +96,30 @@ void timerEvent() {
     sensorAzm.requestSensorValue();
     sensorElv.requestSensorValue();
 
-    controller();
+    if (controller_enabled) {
+        if (!sensorAzm.isValid()) {
+            motorAzm.setMotion(controllerAzm.pid(sensorAzm.getAngle()));
+        }
+        if (!sensorElv.isValid()) {
+            motorElv.setMotion(controllerElv.pid(sensorElv.getAngle()));
+        }
+        Serial.print(controllerAzm.getMode());
+        Serial.print(",");
+        Serial.print(controllerAzm.getKp());
+        Serial.print(",");
+        Serial.print(controllerAzm.getKi());
+        Serial.print(",");
+        Serial.print(controllerAzm.getKd());
+        Serial.print(",");
+        Serial.print(controllerElv.getMode());
+        Serial.print(",");
+        Serial.print(controllerElv.getKp());
+        Serial.print(",");
+        Serial.print(controllerElv.getKi());
+        Serial.print(",");
+        Serial.print(controllerElv.getKd());
+        Serial.println();
+    }
 }
 
 void accept_command(const char *buffer) {
@@ -156,25 +147,52 @@ void accept_command(const char *buffer) {
             motorElv.setMotion(value);
         }
         else if (line.startsWith("con")) {
+            controllerAzm.resetPid();
+            controllerElv.resetPid();
             controller_enabled = !controller_enabled;
         }
         else if (line.startsWith("homing")) {
             moveToHome = !moveToHome;
         }
-        else if (line.startsWith("ctrl_kp")) {
-            line = line.substring(7);
+        else if (line.startsWith("ctrl1_kp")) {
+            line = line.substring(8);
             line.trim();
-            ctrl_kp = line.toInt();
+            controllerAzm.setKp(line.toInt());
         }
-        else if (line.startsWith("ctrl_ki")) {
-            line = line.substring(7);
+        else if (line.startsWith("ctrl1_ki")) {
+            line = line.substring(8);
             line.trim();
-            ctrl_ki = line.toInt();
+            controllerAzm.setKi(line.toInt());
         }
-        else if (line.startsWith("ctrl_angle")) {
-            line = line.substring(10);
+        else if (line.startsWith("ctrl1_kd")) {
+            line = line.substring(8);
             line.trim();
-            ctrl_angle = line.toInt();
+            controllerAzm.setKd(line.toInt());
+        }
+        else if (line.startsWith("ctrl1_target")) {
+            line = line.substring(12);
+            line.trim();
+            controllerAzm.setTarget(line.toInt());
+        }
+        else if (line.startsWith("ctrl2_kp")) {
+            line = line.substring(8);
+            line.trim();
+            controllerElv.setKp(line.toInt());
+        }
+        else if (line.startsWith("ctrl2_ki")) {
+            line = line.substring(8);
+            line.trim();
+            controllerElv.setKi(line.toInt());
+        }
+        else if (line.startsWith("ctrl2_kd")) {
+            line = line.substring(8);
+            line.trim();
+            controllerElv.setKd(line.toInt());
+        }
+        else if (line.startsWith("ctrl2_target")) {
+            line = line.substring(12);
+            line.trim();
+            controllerElv.setTarget(line.toInt());
         }
     }
 }

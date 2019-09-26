@@ -25,6 +25,10 @@ private:
     QLabel m_labelState;
     Monster m_monster;
     Radar m_radar;
+    QDoubleValidator m_doubleValidator;
+
+    void setController(uint index);
+    void setTarget(uint index);
 
 private slots:
     void updatePortListSlot();
@@ -32,12 +36,14 @@ private slots:
     void closePortSlot();
     void updateGuiSlot();
     void updatedStateSlot(const QString &line);
-    void setMotion1Slot();
-    void setMotion2Slot();
-    void setControllerSlot();
-    void setAngleSlot();
-    void brakeMotion1Slot();
-    void brakeMotion2Slot();
+    void setMotionAzmSlot();
+    void setMotionElvSlot();
+    void setControllerAzmSlot();
+    void setControllerElvSlot();
+    void setTargetAzmSlot();
+    void setTargetElvSlot();
+    void brakeMotionAzmSlot();
+    void brakeMotionElvSlot();
 };
 
 #endif /* MAINWINDOW_H_ */

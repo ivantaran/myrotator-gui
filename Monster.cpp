@@ -106,13 +106,26 @@ void Monster::setMotion(uint index, int value) {
     write(QString("set motion%1 %2\n").arg(index + 1).arg(value).toUtf8());
 }
 
-void Monster::setController(int kp, int ki) {
-    write(QString("set ctrl_kp %1\n").arg(kp).toUtf8());
-    write(QString("set ctrl_ki %1\n").arg(ki).toUtf8());
+void Monster::setController(uint index, int kp, int ki, int kd) {
+    qWarning() << QString("set ctrl%1_kp %2\n").arg(index + 1).arg(kp).toUtf8() << "\n";
+
+    write(QString("set ctrl%1_kp %2\n").arg(index + 1).arg(kp).toUtf8());
+    write(QString("set ctrl%1_ki %2\n").arg(index + 1).arg(ki).toUtf8());
+    write(QString("set ctrl%1_kd %2\n").arg(index + 1).arg(kd).toUtf8());
 }
 
-void Monster::setAngle(int angle) {
-    write(QString("set ctrl_angle %1\n").arg(angle).toUtf8());
+void Monster::setTargetLinear(uint index, int angle) {
+    write(QString("set ctrl%1_target %2\n").arg(index + 1).arg(angle).toUtf8());
+}
+
+void Monster::setTargetRadians(uint index, qreal angle) {
+    int value = int(4096.0 * angle / M_PI + 0.5);
+    setTargetLinear(index, value);
+}
+
+void Monster::setTargetDegrees(uint index, qreal angle) {
+    int value = int(4096.0 * angle / 180.0 + 0.5);
+    setTargetLinear(index, value);
 }
 
 void Monster::testSlot() {
