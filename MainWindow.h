@@ -44,6 +44,12 @@ private slots:
     void setTargetElvSlot();
     void brakeMotionAzmSlot();
     void brakeMotionElvSlot();
+    void setModeHomingAzmSlot();
+    void setModeHomingElvSlot();
+    void setPwmHomingAzmSlot();
+    void setPwmHomingElvSlot();
+    void setModePidAzmSlot();
+    void setModePidElvSlot();
 };
 
 #endif /* MAINWINDOW_H_ */

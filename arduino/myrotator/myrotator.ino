@@ -1,57 +1,20 @@
 
-#include "MyMotor.h"
-#include "As5601.h"
-#include "Endstop.h"
 #include "Controller.h"
 
-MyMotor motorAzm = MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
-MyMotor motorElv = MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
 
-As5601 sensorAzm = As5601(As5601::Hardware);
-As5601 sensorElv = As5601(As5601::Software);
-
-Endstop endstopAzm = Endstop(10);
-Endstop endstopElv = Endstop(11);
-
-Controller controllerAzm = Controller();
-Controller controllerElv = Controller();
+Controller controllerAzm = Controller(Controller::Azimuth);
+Controller controllerElv = Controller(Controller::Elevation);
 
 int ms = 100;
 
 unsigned long t0 = 0;
 
-bool controller_enabled = false;
-bool moveToHome = false;
-
-bool homing() {
-    static bool isEndAzm = false;
-
-    if (endstopAzm.isEnd()) {
-        motorAzm.setMotion(0);
-        isEndAzm = true;
-    } else if (!isEndAzm) {
-        motorAzm.setMotion(motorAzm.getPwmHoming());
-    }
-
-    return isEndAzm;
-}
-
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     Serial.begin(UART_SPEED);
-    
-    motorAzm.begin();
-    motorElv.begin();
-    
-    endstopAzm.begin();
-    endstopElv.begin();
-
-    sensorAzm.begin();
-    sensorElv.begin();
-    
-    controllerAzm.setMode(Controller::Pid);
-    controllerElv.setMode(Controller::Pid);
+    controllerAzm.begin();
+    controllerElv.begin();    
 
     t0 = millis();
   
@@ -60,66 +23,41 @@ void setup() {
 
 void timerEvent() {
     Serial.print("state:");
-    Serial.print(motorAzm.getCurrentSensorValue());
+    Serial.print(controllerAzm.getMotor()->getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motorElv.getCurrentSensorValue());
+    Serial.print(controllerElv.getMotor()->getCurrentSensorValue());
     Serial.print(",");
-    Serial.print(motorAzm.getEnDiagValue());
+    Serial.print(controllerAzm.getMotor()->getEnDiagValue());
     Serial.print(",");
-    Serial.print(motorElv.getEnDiagValue());
+    Serial.print(controllerElv.getMotor()->getEnDiagValue());
     Serial.print(",");
-    Serial.print(motorAzm.getPwm());
+    Serial.print(controllerAzm.getMotor()->getPwm());
     Serial.print(",");
-    Serial.print(motorElv.getPwm());
+    Serial.print(controllerElv.getMotor()->getPwm());
     Serial.print(",");
-    Serial.print(motorAzm.getInaValue());
+    Serial.print(controllerAzm.getMotor()->getInaValue());
     Serial.print(",");
-    Serial.print(motorAzm.getInbValue());
+    Serial.print(controllerAzm.getMotor()->getInbValue());
     Serial.print(",");
-    Serial.print(motorElv.getInaValue());
+    Serial.print(controllerElv.getMotor()->getInaValue());
     Serial.print(",");
-    Serial.print(motorElv.getInbValue());
+    Serial.print(controllerElv.getMotor()->getInbValue());
 
     Serial.print(",");
-    Serial.print(sensorAzm.getAngle());
+    Serial.print(controllerAzm.getSensor()->getAngle());
     Serial.print(",");
-    Serial.print(sensorElv.getAngle());
+    Serial.print(controllerElv.getSensor()->getAngle());
 
 
     Serial.print(",");
-    Serial.print(endstopAzm.isEnd());
+    Serial.print(controllerAzm.getEndstop()->isEnd());
     Serial.print(",");
-    Serial.print(endstopElv.isEnd());
+    Serial.print(controllerElv.getEndstop()->isEnd());
 
     Serial.println();
 
-    sensorAzm.requestSensorValue();
-    sensorElv.requestSensorValue();
-
-    if (controller_enabled) {
-        if (!sensorAzm.isValid()) {
-            motorAzm.setMotion(controllerAzm.pid(sensorAzm.getAngle()));
-        }
-        if (!sensorElv.isValid()) {
-            motorElv.setMotion(controllerElv.pid(sensorElv.getAngle()));
-        }
-        Serial.print(controllerAzm.getMode());
-        Serial.print(",");
-        Serial.print(controllerAzm.getKp());
-        Serial.print(",");
-        Serial.print(controllerAzm.getKi());
-        Serial.print(",");
-        Serial.print(controllerAzm.getKd());
-        Serial.print(",");
-        Serial.print(controllerElv.getMode());
-        Serial.print(",");
-        Serial.print(controllerElv.getKp());
-        Serial.print(",");
-        Serial.print(controllerElv.getKi());
-        Serial.print(",");
-        Serial.print(controllerElv.getKd());
-        Serial.println();
-    }
+    controllerAzm.execute();
+    controllerElv.execute();
 }
 
 void accept_command(const char *buffer) {
@@ -133,26 +71,34 @@ void accept_command(const char *buffer) {
             line.trim();
             long value = line.toInt();
             if (value == 0) {
-                controller_enabled = false;
+                controllerAzm.setMode(Controller::Default);
             }
-            motorAzm.setMotion(value);
+            else {
+                controllerAzm.getMotor()->setMotion(value);
+            }
         }
         else if (line.startsWith("motion2")) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
             if (value == 0) {
-                controller_enabled = false;
+                controllerElv.setMode(Controller::Default);
             }
-            motorElv.setMotion(value);
+            else {
+                controllerElv.getMotor()->setMotion(value);
+            }
         }
-        else if (line.startsWith("con")) {
-            controllerAzm.resetPid();
-            controllerElv.resetPid();
-            controller_enabled = !controller_enabled;
+        else if (line.startsWith("pid1")) {
+            controllerAzm.setMode(Controller::Pid);
         }
-        else if (line.startsWith("homing")) {
-            moveToHome = !moveToHome;
+        else if (line.startsWith("pid2")) {
+            controllerElv.setMode(Controller::Pid);
+        }
+        else if (line.startsWith("homing1")) {
+            controllerAzm.setMode(Controller::Homing);
+        }
+        else if (line.startsWith("homing2")) {
+            controllerElv.setMode(Controller::Homing);
         }
         else if (line.startsWith("ctrl1_kp")) {
             line = line.substring(8);
@@ -194,6 +140,16 @@ void accept_command(const char *buffer) {
             line.trim();
             controllerElv.setTarget(line.toInt());
         }
+        else if (line.startsWith("pwm_homing1")) {
+            line = line.substring(11);
+            line.trim();
+            controllerAzm.getMotor()->setPwmHoming(line.toInt());
+        }
+        else if (line.startsWith("pwm_homing2")) {
+            line = line.substring(11);
+            line.trim();
+            controllerElv.getMotor()->setPwmHoming(line.toInt());
+        }
     }
 }
 
@@ -224,9 +180,5 @@ void loop() {
         timerEvent();
     }
     
-    if (moveToHome) {
-        moveToHome = !homing();
-    }
-
     accept_serial();
 }

@@ -9,20 +9,30 @@
 
 MainWindow::MainWindow() {
     m_widget.setupUi(this);
-    m_widget.widget_2->layout()->addWidget(&m_radar);
+    
+    m_widget.tab0->layout()->addWidget(&m_radar);
     m_widget.statusbar->addWidget(&m_labelState);
-    m_stateWidget[0].setupUi(m_widget.widgetState1);
-    m_stateWidget[1].setupUi(m_widget.widgetState2);
+    m_stateWidget[0].setupUi(m_widget.tab1);
+    m_stateWidget[1].setupUi(m_widget.tab2);
     
     m_doubleValidator.setLocale(QLocale::C);
+    
+    m_stateWidget[0].lePwm->setValidator(&m_doubleValidator);
+    m_stateWidget[1].lePwm->setValidator(&m_doubleValidator);
+    m_stateWidget[0].lePwmHoming->setValidator(&m_doubleValidator);
+    m_stateWidget[1].lePwmHoming->setValidator(&m_doubleValidator);
+
     m_stateWidget[0].leTarget->setValidator(&m_doubleValidator);
     m_stateWidget[1].leTarget->setValidator(&m_doubleValidator);
 
     updatePortListSlot();
     connect(m_widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(m_widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
-    connect(m_widget.buttonTest, SIGNAL(clicked()), &m_monster, SLOT(testSlot()));
-    connect(m_widget.buttonHoming, SIGNAL(clicked()), &m_monster, SLOT(homingSlot()));
+
+    connect(m_stateWidget[0].buttonPid, SIGNAL(clicked()), this, SLOT(setModePidAzmSlot()));
+    connect(m_stateWidget[1].buttonPid, SIGNAL(clicked()), this, SLOT(setModePidElvSlot()));
+    connect(m_stateWidget[0].buttonHoming, SIGNAL(clicked()), this, SLOT(setModeHomingAzmSlot()));
+    connect(m_stateWidget[1].buttonHoming, SIGNAL(clicked()), this, SLOT(setModeHomingElvSlot()));
 
     connect(m_stateWidget[0].leKp, SIGNAL(editingFinished()), this, SLOT(setControllerAzmSlot()));
     connect(m_stateWidget[0].leKi, SIGNAL(editingFinished()), this, SLOT(setControllerAzmSlot()));
@@ -38,6 +48,8 @@ MainWindow::MainWindow() {
 
     connect(m_stateWidget[0].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionAzmSlot()));
     connect(m_stateWidget[1].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionElvSlot()));
+    connect(m_stateWidget[0].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
+    connect(m_stateWidget[1].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
     connect(m_stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionAzmSlot()));
     connect(m_stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionElvSlot()));
 }
@@ -113,10 +125,11 @@ void MainWindow::updatedStateSlot(const QString &line) {
         m_stateWidget[i].labelDiagValue->setText(
                 QString("%0").arg(m_monster.getDiag(i))
             );
+        m_stateWidget[i].labelAngleValue->setText(QString("%1").arg(m_monster.getAngleDegrees(i), 7, 'f', 1));
         m_stateWidget[i].labelEndstopValue->setText(m_monster.isEndstop(i) ? "true" : "false");
     }
     
-    m_radar.setSensor(m_monster.getAngle(0), m_monster.getAngle(1), true);
+    m_radar.setSensor(m_monster.getAngleRadians(0), m_monster.getAngleRadians(1), true);
     
 }
 
@@ -129,14 +142,26 @@ void MainWindow::closePortSlot() {
 
 void MainWindow::setMotionAzmSlot() {
     bool ok;
-    int value = m_stateWidget[0].lePwm->text().toInt(&ok);
+    qreal value = m_stateWidget[0].lePwm->text().toDouble(&ok);
     m_monster.setMotion(0, value);
 }
 
 void MainWindow::setMotionElvSlot() {
     bool ok;
-    int value = m_stateWidget[1].lePwm->text().toInt(&ok);
+    qreal value = m_stateWidget[1].lePwm->text().toDouble(&ok);
     m_monster.setMotion(1, value);
+}
+
+void MainWindow::setPwmHomingAzmSlot() {
+    bool ok;
+    qreal value = m_stateWidget[0].lePwmHoming->text().toDouble(&ok);
+    m_monster.setPwmHoming(0, value);
+}
+
+void MainWindow::setPwmHomingElvSlot() {
+    bool ok;
+    qreal value = m_stateWidget[1].lePwmHoming->text().toDouble(&ok);
+    m_monster.setPwmHoming(1, value);
 }
 
 void MainWindow::brakeMotionAzmSlot() {
@@ -188,4 +213,20 @@ void MainWindow::setTargetAzmSlot() {
 
 void MainWindow::setTargetElvSlot() {
     setTarget(1);
+}
+
+void MainWindow::setModeHomingAzmSlot() {
+    m_monster.setModeHoming(0);
+}
+
+void MainWindow::setModeHomingElvSlot() {
+    m_monster.setModeHoming(1);
+}
+
+void MainWindow::setModePidAzmSlot() {
+    m_monster.setModePid(0);
+}
+
+void MainWindow::setModePidElvSlot() {
+    m_monster.setModePid(1);
 }

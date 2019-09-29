@@ -40,8 +40,8 @@ void Monster::readyReadSlot() {
                 uint inb2 = list.at(9).toUInt(&ok) & 0x01;
                 m_direction[0] = ina1 | (inb1 << 1);
                 m_direction[1] = ina2 | (inb2 << 1);
-                m_angle[0] = (qreal)list.at(10).toInt(&ok) / 4096.0 * M_PI;
-                m_angle[1] = (qreal)list.at(11).toInt(&ok) / 4096.0 * M_PI;
+                m_angle[0] = (qreal)list.at(10).toInt(&ok) / -4096.0 * M_PI;
+                m_angle[1] = (qreal)list.at(11).toInt(&ok) / -4096.0 * M_PI;
                 m_endstop[0] = list.at(12).toUInt(&ok) > 0;
                 m_endstop[1] = list.at(13).toUInt(&ok) > 0;
             }
@@ -94,16 +94,21 @@ const QString Monster::getDirectionString(uint index) {
     return result;
 }
 
-qreal Monster::getAngle(uint index) {
+qreal Monster::getAngleRadians(uint index) {
     return index < 2 ? m_angle[index] : 0.0;
+}
+
+qreal Monster::getAngleDegrees(uint index) {
+    return qRadiansToDegrees(getAngleRadians(index));
 }
 
 bool Monster::isEndstop(uint index) {
     return index < 2 ? m_endstop[index] : true;
 }
 
-void Monster::setMotion(uint index, int value) {
-    write(QString("set motion%1 %2\n").arg(index + 1).arg(value).toUtf8());
+void Monster::setMotion(uint index, qreal value) {
+    int pwm = qRound(value * 2.55);
+    write(QString("set motion%1 %2\n").arg(index + 1).arg(pwm).toUtf8());
 }
 
 void Monster::setController(uint index, int kp, int ki, int kd) {
@@ -119,19 +124,24 @@ void Monster::setTargetLinear(uint index, int angle) {
 }
 
 void Monster::setTargetRadians(uint index, qreal angle) {
-    int value = int(4096.0 * angle / M_PI + 0.5);
+    int value = qRound(-4096.0 * angle / M_PI);
     setTargetLinear(index, value);
 }
 
 void Monster::setTargetDegrees(uint index, qreal angle) {
-    int value = int(4096.0 * angle / 180.0 + 0.5);
+    int value = qRound(-4096.0 * angle / 180.0);
     setTargetLinear(index, value);
 }
 
-void Monster::testSlot() {
-    write("set con\n");
+void Monster::setModePid(uint index) {
+    write(QString("set pid%1\n").arg(index + 1).toUtf8());
 }
 
-void Monster::homingSlot() {
-    write("set homing\n");
+void Monster::setModeHoming(uint index) {
+    write(QString("set homing%1\n").arg(index + 1).toUtf8());
+}
+
+void Monster::setPwmHoming(uint index, qreal value) {
+    int pwm = qRound(value * 2.55);
+    write(QString("set pwm_homing%1 %2\n").arg(index + 1).arg(pwm).toUtf8());
 }

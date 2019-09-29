@@ -86,6 +86,10 @@ public:
         analogWrite(m_pinPwm, m_pwm);
     }
     
+    void setPwmHoming(int value) {
+        m_pwmHoming = value;
+    }
+
     inline int getCurrentSensorValue() {
         return analogRead(m_pinCs);
     }
@@ -109,7 +113,7 @@ private:
     uint8_t m_pinEn;
     uint8_t m_pinPwm;
     uint8_t m_pwm;
-    long m_pwmHoming;
+    int m_pwmHoming;
 
     void brake() {
         digitalWrite(m_pinIna, LOW);

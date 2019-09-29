@@ -21,13 +21,17 @@ public:
     uint getDiag(uint index);
     uint getDirection(uint index);
     const QString getDirectionString(uint index);
-    qreal getAngle(uint index);
+    qreal getAngleRadians(uint index);
+    qreal getAngleDegrees(uint index);
     bool isEndstop(uint index);
-    void setMotion(uint index, int value);
+    void setMotion(uint index, qreal value);
     void setController(uint index, int kp, int ki, int kd);
     void setTargetLinear(uint index, int angle);
     void setTargetRadians(uint index, qreal angle);
     void setTargetDegrees(uint index, qreal angle);
+    void setModePid(uint index);
+    void setModeHoming(uint index);
+    void setPwmHoming(uint index, qreal value);
 
 private:
     QString m_stateLine;
@@ -40,10 +44,6 @@ private:
 
 private slots:
     void readyReadSlot();
-
-public slots:
-    void testSlot();
-    void homingSlot();
 
 signals:
     void updatedState(const QString &line);

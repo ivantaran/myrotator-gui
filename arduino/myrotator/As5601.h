@@ -50,7 +50,7 @@ public:
     }
     
     void setZero() {
-        m_angleOffset = m_angle;
+        m_angleOffset = m_angle;  // TODO: remove turnover's
     }
     
     int16_t getAngle(bool *ok = nullptr) {
@@ -105,6 +105,10 @@ public:
         
         if (m_rawAngle[0] != -1 && m_rawAngle[1] != -1) {
             m_angle = m_rawAngle[0] + AS5601_TURNOVER_VALUE * m_turnover - m_angleOffset;
+            m_isValid = true;
+        }
+        else {
+            m_isValid = false;
         }
     }
 
