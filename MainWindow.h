@@ -44,6 +44,8 @@ private slots:
     void setTargetElvSlot();
     void brakeMotionAzmSlot();
     void brakeMotionElvSlot();
+    void resetErrorAzmSlot();
+    void resetErrorElvSlot();
     void setModeHomingAzmSlot();
     void setModeHomingElvSlot();
     void setPwmHomingAzmSlot();

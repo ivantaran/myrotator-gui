@@ -21,6 +21,8 @@ public:
     uint getDiag(uint index);
     uint getDirection(uint index);
     const QString getDirectionString(uint index);
+    const QString getModeString(uint index);
+    const QString getErrorString(uint index);
     qreal getAngleRadians(uint index);
     qreal getAngleDegrees(uint index);
     bool isEndstop(uint index);
@@ -32,9 +34,24 @@ public:
     void setModePid(uint index);
     void setModeHoming(uint index);
     void setPwmHoming(uint index, qreal value);
-
+    void resetError(uint index);
 private:
+    typedef enum {
+        Default = 0,
+        Pid = 1,
+        Homing = 2,
+        AngleSpeed = 3
+    } ControllerMode;
+    
+    typedef enum {
+        Ok = 0, 
+        ErrorSensor = 1, 
+        ErrorHoming = 2, 
+    } ControllerError;
+
     QString m_stateLine;
+    ControllerMode m_mode[2] = { ControllerMode::Default, ControllerMode::Default };
+    ControllerError m_error[2] = { ControllerError::Ok, ControllerError::Ok};
     uint m_pwm[2] = { 0, 0 };
     uint m_currentSensor[2] = { 0, 0 };
     uint m_diag[2] = { 0, 0 };

@@ -27,7 +27,7 @@ public:
         m_turnover = 0;
         m_rawAngle[0] = -1;
         m_rawAngle[1] = -1;
-        m_angleOffset = 0;
+        m_offset = 0;
         m_angle = 0;
         m_isValid = false;
     }
@@ -45,12 +45,12 @@ public:
         }
     }
 
-    void setAngleOffset(int16_t offset) {
-        m_angleOffset = offset;
+    void resetOffset() {
+        m_offset = 0;
     }
     
     void setZero() {
-        m_angleOffset = m_angle;  // TODO: remove turnover's
+        m_offset = m_angle;  // TODO: remove turnover's
     }
     
     int16_t getAngle(bool *ok = nullptr) {
@@ -104,7 +104,7 @@ public:
         }
         
         if (m_rawAngle[0] != -1 && m_rawAngle[1] != -1) {
-            m_angle = m_rawAngle[0] + AS5601_TURNOVER_VALUE * m_turnover - m_angleOffset;
+            m_angle = m_rawAngle[0] + AS5601_TURNOVER_VALUE * m_turnover - m_offset;
             m_isValid = true;
         }
         else {
@@ -116,7 +116,7 @@ private:
     bool m_isHardware;
     int8_t m_turnover;
     int16_t m_rawAngle[2];
-    int16_t m_angleOffset;
+    int16_t m_offset;
     int16_t m_angle;
     bool m_isValid;
 

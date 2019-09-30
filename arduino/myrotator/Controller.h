@@ -19,14 +19,25 @@ public:
         Homing = 2,
         AngleSpeed = 3
     } ControllerMode;
+    
+    typedef enum {
+        Ok = 0, 
+        ErrorSensor = 1, 
+        ErrorHoming = 2, 
+    } ControllerError;
 
     Controller(const ControllerType &type) {
         m_kp = 0;
         m_ki = 0;
         m_kd = 0;
         m_target = 0;
+        m_tolerance = 0;
+        m_angleMin = 0;
+        m_angleMax = 4095;
+        m_mode = ControllerMode::Default;
+        m_error = ControllerError::Ok;
+
         resetPid();
-        setScale(1000);
 
         switch (type) {
         case ControllerType::Elevation:
@@ -54,9 +65,10 @@ public:
     }
 
     void setMode(const ControllerMode &mode) {
-        m_mode = mode;
+        if (m_error == ControllerError::Ok) {
+            m_mode = mode;
+        }
         resetPid();
-        m_motor->setMotion(0);
     }
 
     void setKp(long value) {
@@ -71,13 +83,16 @@ public:
         m_kd = value;
     }
     
-    void setScale(long value) {
-        m_scale = value;
-        m_pidValueLimit = 511 * m_scale;
-    }
-    
     void setTarget(long value) {
         m_target = value;
+    }
+
+    void setPidTolerance(long value) {
+        m_tolerance = value;
+    }
+
+    void resetError() {
+        m_error = ControllerError::Ok;
     }
 
     inline const ControllerMode &getMode() {
@@ -96,8 +111,20 @@ public:
         return m_kd;
     }
 
+    inline long getTolerance() {
+        return m_tolerance;
+    }
+    
+    inline const ControllerError &getError() {
+        return m_error;
+    }
+
     void execute() {
         m_sensor->requestSensorValue();
+        
+        if (!m_sensor->isValid()) {
+            setError(ControllerError::ErrorSensor);
+        }
 
         switch (m_mode) {
         case ControllerMode::Pid:
@@ -127,63 +154,93 @@ public:
         return m_endstop;
     }
 
-
 private:
     MyMotor *m_motor;
     As5601 *m_sensor;
     Endstop *m_endstop;
 
-    ControllerMode m_mode = ControllerMode::Default;
+    ControllerMode m_mode;
+    ControllerError m_error;
 
     long m_kp;
     long m_ki;
     long m_kd;
     long m_scale;
     long m_pidValueLimit;
+    long m_tolerance;
     long m_target;
-    long m_error[3];
+    long m_deviation[3];
     long m_pidValue;
+    long m_angleMin;
+    long m_angleMax;
 
     void pid() {
-        if (!m_sensor->isValid()) {
-            this->setMode(ControllerMode::Default);
-            return;
-        }
-
-        m_error[2] = m_error[1];
-        m_error[1] = m_error[0];
-        m_error[0] = m_sensor->getAngle() - m_target;
+        m_deviation[2] = m_deviation[1];
+        m_deviation[1] = m_deviation[0];
+        m_deviation[0] = m_sensor->getAngle() - m_target;
         
-        m_pidValue += m_kp * (m_error[0] - m_error[1]) 
-                + m_ki * m_error[0] 
-                + m_kd * (m_error[0] - m_error[1] - m_error[1] + m_error[2]);
-
-        if (m_pidValue > m_pidValueLimit) {
-            m_pidValue = m_pidValueLimit;
+        if (abs(m_deviation[0]) < m_tolerance) {
+            resetPid();
         }
-        else if (m_pidValue < -m_pidValueLimit) {
-            m_pidValue = -m_pidValueLimit;
-        }
+        else {
+            m_pidValue += m_kp * (m_deviation[0] - m_deviation[1]) 
+                    + m_ki * m_deviation[0] 
+                    + m_kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
 
-        m_motor->setMotion(m_pidValue / m_scale);
+            if (m_pidValue > m_pidValueLimit) {
+                m_pidValue = m_pidValueLimit;
+            }
+            else if (m_pidValue < -m_pidValueLimit) {
+                m_pidValue = -m_pidValueLimit;
+            }
+            m_motor->setMotion(m_pidValue / m_scale);
+        }
     }
 
+    void setScale(long value) {
+        m_scale = value;
+        m_pidValueLimit = (long)m_motor->getPwmMax() * m_scale;
+    }
+    
     void resetPid() {
         m_pidValue = 0;
-        m_error[0] = 0;
-        m_error[1] = 0;
-        m_error[2] = 0;
+        m_deviation[0] = 0;
+        m_deviation[1] = 0;
+        m_deviation[2] = 0;
+        setScale(1000);
+        m_motor->setMotion(0);
     }
 
     void homing() {
-        if (m_endstop->isEnd()) {
-            setMode(ControllerMode::Default);
-            m_sensor->setZero();
-        } else {
-            m_motor->setMotion(m_motor->getPwmHoming());
+        if (abs(m_sensor->getAngle()) > m_angleMax) {
+            setError(ControllerError::ErrorHoming);
+        }
+        else {
+            if (m_endstop->isEnd()) {
+                setMode(ControllerMode::Default);
+                m_sensor->setZero();
+            } else {
+                m_motor->setMotion(m_motor->getPwmHoming());
+            }
         }
     }
-    
+
+    void setError(const ControllerError &error) {
+        m_error = error;
+        
+        switch (m_error) {
+        case ControllerError::ErrorHoming:
+            m_sensor->resetOffset();
+            break;
+        default:
+            break;
+        }
+
+        if (m_error != ControllerError::Ok) {
+            setMode(ControllerMode::Default);
+        }
+    }
+
 };
 
 #endif /* CONTROLLER_H_ */

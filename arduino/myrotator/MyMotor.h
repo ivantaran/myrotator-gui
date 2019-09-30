@@ -30,6 +30,8 @@ public:
         m_pinPwm = pinPwm;
 
         m_pwm = 0;
+        m_pwmMin = 50;
+        m_pwmMax = 255;
         m_pwmHoming = 0;
     }
     
@@ -40,14 +42,6 @@ public:
         pinMode(m_pinInb, OUTPUT);
         pinMode(m_pinPwm, OUTPUT);
         this->setMotion(0);
-    }
-
-    inline uint8_t getPwm() {
-        return m_pwm;
-    }
-
-    inline long getPwmHoming() {
-        return m_pwmHoming;
     }
 
     void setMotion(long value) {
@@ -86,6 +80,14 @@ public:
         analogWrite(m_pinPwm, m_pwm);
     }
     
+    void setPwmMin(uint8_t value) {
+        m_pwmMin = (value < m_pwmMax) ? value : m_pwmMax;
+    }
+
+    void setPwmMax(uint8_t value) {
+        m_pwmMax = (value > m_pwmMin) ? value : m_pwmMin;
+    }
+
     void setPwmHoming(int value) {
         m_pwmHoming = value;
     }
@@ -106,6 +108,22 @@ public:
         return digitalRead(m_pinInb);
     }
 
+    inline uint8_t getPwm() {
+        return m_pwm;
+    }
+
+    inline uint8_t getPwmMin() {
+        return m_pwmMin;
+    }
+
+    inline uint8_t getPwmMax() {
+        return m_pwmMax;
+    }
+
+    inline long getPwmHoming() {
+        return m_pwmHoming;
+    }
+
 private:
     uint8_t m_pinIna;
     uint8_t m_pinInb; 
@@ -113,6 +131,8 @@ private:
     uint8_t m_pinEn;
     uint8_t m_pinPwm;
     uint8_t m_pwm;
+    uint8_t m_pwmMin;
+    uint8_t m_pwmMax;
     int m_pwmHoming;
 
     void brake() {

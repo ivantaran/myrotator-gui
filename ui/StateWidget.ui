@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
-    <height>286</height>
+    <width>520</width>
+    <height>311</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,9 +20,6 @@
       <string>Axis Driver</string>
      </property>
      <layout class="QFormLayout" name="formLayout">
-      <property name="rightMargin">
-       <number>2</number>
-      </property>
       <item row="0" column="0">
        <widget class="QLabel" name="labelDiag">
         <property name="text">
@@ -112,6 +109,13 @@
        </widget>
       </item>
       <item row="5" column="0" colspan="2">
+       <widget class="QPushButton" name="buttonResetError">
+        <property name="text">
+         <string>Reset Error</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="2">
        <widget class="QPushButton" name="buttonHoming">
         <property name="text">
          <string>Homing</string>
@@ -119,16 +123,16 @@
        </widget>
       </item>
       <item row="7" column="0" colspan="2">
-       <widget class="QPushButton" name="buttonMotionBrake">
-        <property name="text">
-         <string>Break</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0" colspan="2">
        <widget class="QPushButton" name="buttonPid">
         <property name="text">
          <string>PID</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QPushButton" name="buttonMotionBrake">
+        <property name="text">
+         <string>Break</string>
         </property>
        </widget>
       </item>
@@ -143,56 +147,56 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <layout class="QFormLayout" name="formLayout_3">
-        <item row="0" column="0">
+        <item row="2" column="0">
          <widget class="QLabel" name="labelEndstop">
           <property name="text">
            <string>Endstop</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
+        <item row="2" column="1">
          <widget class="QLabel" name="labelEndstopValue">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="labelAngle">
           <property name="text">
            <string>Angle</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="3" column="1">
          <widget class="QLabel" name="labelAngleValue">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="labelDeviation">
           <property name="text">
            <string>Deviation</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="4" column="1">
          <widget class="QLabel" name="labelDeviationValue">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="labelAngleMax">
           <property name="text">
            <string>Max angle</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="5" column="1">
          <widget class="QLineEdit" name="leAngleMax">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -211,14 +215,14 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="6" column="0">
          <widget class="QLabel" name="labelAngleMin">
           <property name="text">
            <string>Min angle</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="6" column="1">
          <widget class="QLineEdit" name="leAngleMin">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -234,6 +238,34 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelError">
+          <property name="text">
+           <string>Error</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelErrorValue">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelMode">
+          <property name="text">
+           <string>Mode</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="labelModeValue">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
@@ -378,6 +410,20 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>lePwm</tabstop>
+  <tabstop>lePwmHoming</tabstop>
+  <tabstop>buttonHoming</tabstop>
+  <tabstop>buttonPid</tabstop>
+  <tabstop>buttonMotionBrake</tabstop>
+  <tabstop>leAngleMax</tabstop>
+  <tabstop>leAngleMin</tabstop>
+  <tabstop>leKp</tabstop>
+  <tabstop>leKi</tabstop>
+  <tabstop>leKd</tabstop>
+  <tabstop>leRateMs</tabstop>
+  <tabstop>leTarget</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

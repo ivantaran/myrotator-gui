@@ -52,6 +52,8 @@ MainWindow::MainWindow() {
     connect(m_stateWidget[1].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
     connect(m_stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionAzmSlot()));
     connect(m_stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionElvSlot()));
+    connect(m_stateWidget[0].buttonResetError, SIGNAL(clicked()), this, SLOT(resetErrorAzmSlot()));
+    connect(m_stateWidget[1].buttonResetError, SIGNAL(clicked()), this, SLOT(resetErrorElvSlot()));
 }
 
 MainWindow::~MainWindow() {
@@ -111,22 +113,28 @@ void MainWindow::updatedStateSlot(const QString &line) {
     m_labelState.setText(line);
 
     for (uint i = 0; i < 2; i++) {
+        m_stateWidget[i].labelModeValue->setText(m_monster.getModeString(i));
+        m_stateWidget[i].labelErrorValue->setText(m_monster.getErrorString(i));
+
         m_stateWidget[i].labelCurrentValue->setText(
-                QString("%0").arg(m_monster.getCurrentAmp(i), 4, 'f', 1)
-            );
+                QString("%0").arg(m_monster.getCurrentAmp(i), 4, 'f', 1));
+
         if (!m_stateWidget[i].lePwm->hasFocus()) {
             m_stateWidget[i].lePwm->setText(
-                    QString("%0").arg(m_monster.getPwm(i))
-                );
+                    QString("%0").arg(m_monster.getPwm(i)));
         }
+        
         m_stateWidget[i].labelDirectionValue->setText(
-                m_monster.getDirectionString(i)
-            );
+                m_monster.getDirectionString(i));
+
         m_stateWidget[i].labelDiagValue->setText(
-                QString("%0").arg(m_monster.getDiag(i))
-            );
-        m_stateWidget[i].labelAngleValue->setText(QString("%1").arg(m_monster.getAngleDegrees(i), 7, 'f', 1));
-        m_stateWidget[i].labelEndstopValue->setText(m_monster.isEndstop(i) ? "true" : "false");
+                QString("%0").arg(m_monster.getDiag(i)));
+        
+        m_stateWidget[i].labelAngleValue->setText(
+            QString("%1").arg(m_monster.getAngleDegrees(i), 7, 'f', 1));
+
+        m_stateWidget[i].labelEndstopValue->setText(
+            m_monster.isEndstop(i) ? "true" : "false");
     }
     
     m_radar.setSensor(m_monster.getAngleRadians(0), m_monster.getAngleRadians(1), true);
@@ -172,6 +180,14 @@ void MainWindow::brakeMotionAzmSlot() {
 void MainWindow::brakeMotionElvSlot() {
     m_monster.setMotion(1, 0);
     m_stateWidget[1].lePwm->setText("0");
+}
+
+void MainWindow::resetErrorAzmSlot() {
+    m_monster.resetError(0);
+}
+
+void MainWindow::resetErrorElvSlot() {
+    m_monster.resetError(1);
 }
 
 void MainWindow::setController(uint index) {

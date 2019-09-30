@@ -27,23 +27,28 @@ void Monster::readyReadSlot() {
         if (m_stateLine.contains("state:")) {
             m_stateLine = m_stateLine.remove("state:");
             QStringList list = m_stateLine.split(QChar(','));
+            uint i = 0;
             if (list.count() >= 14) {
-                m_currentSensor[0] = list.at(0).toUInt(&ok);
-                m_currentSensor[1] = list.at(1).toUInt(&ok);
-                m_diag[0] = list.at(2).toUInt(&ok);
-                m_diag[1] = list.at(3).toUInt(&ok);
-                m_pwm[0] = list.at(4).toUInt(&ok);
-                m_pwm[1] = list.at(5).toUInt(&ok);
-                uint ina1 = list.at(6).toUInt(&ok) & 0x01;
-                uint inb1 = list.at(7).toUInt(&ok) & 0x01;
-                uint ina2 = list.at(8).toUInt(&ok) & 0x01;
-                uint inb2 = list.at(9).toUInt(&ok) & 0x01;
+                m_mode[0] = static_cast<ControllerMode>(list.at(i++).toUInt(&ok));
+                m_mode[1] = static_cast<ControllerMode>(list.at(i++).toUInt(&ok));
+                m_error[0] = static_cast<ControllerError>(list.at(i++).toUInt(&ok));
+                m_error[1] = static_cast<ControllerError>(list.at(i++).toUInt(&ok));
+                m_currentSensor[0] = list.at(i++).toUInt(&ok);
+                m_currentSensor[1] = list.at(i++).toUInt(&ok);
+                m_diag[0] = list.at(i++).toUInt(&ok);
+                m_diag[1] = list.at(i++).toUInt(&ok);
+                m_pwm[0] = list.at(i++).toUInt(&ok);
+                m_pwm[1] = list.at(i++).toUInt(&ok);
+                uint ina1 = list.at(i++).toUInt(&ok) & 0x01;
+                uint inb1 = list.at(i++).toUInt(&ok) & 0x01;
+                uint ina2 = list.at(i++).toUInt(&ok) & 0x01;
+                uint inb2 = list.at(i++).toUInt(&ok) & 0x01;
                 m_direction[0] = ina1 | (inb1 << 1);
                 m_direction[1] = ina2 | (inb2 << 1);
-                m_angle[0] = (qreal)list.at(10).toInt(&ok) / -4096.0 * M_PI;
-                m_angle[1] = (qreal)list.at(11).toInt(&ok) / -4096.0 * M_PI;
-                m_endstop[0] = list.at(12).toUInt(&ok) > 0;
-                m_endstop[1] = list.at(13).toUInt(&ok) > 0;
+                m_angle[0] = (qreal)list.at(i++).toInt(&ok) / -4096.0 * M_PI;
+                m_angle[1] = (qreal)list.at(i++).toInt(&ok) / -4096.0 * M_PI;
+                m_endstop[0] = list.at(i++).toUInt(&ok) > 0;
+                m_endstop[1] = list.at(i++).toUInt(&ok) > 0;
             }
         }
     }
@@ -76,21 +81,70 @@ const QString Monster::getDirectionString(uint index) {
     QString result;
     switch (getDirection(index)) {
     case 0:
-        result = "brakedown";
+        result = "Brakedown";
         break;
     case 1:
-        result = "positive";
+        result = "Positive";
         break;
     case 2:
-        result = "negative";
+        result = "Negative";
         break;
     case 3:
-        result = "breakup";
+        result = "Breakup";
         break;
     default:
-        result = "unknown";
+        result = "Unknown";
         break;
     }
+    return result;
+}
+
+const QString Monster::getModeString(uint index) {
+    QString result;
+
+    if (index < 2) {
+        switch (m_mode[index]) {
+        case ControllerMode::Default:
+            result = "Default";
+            break;
+        case ControllerMode::Pid:
+            result = "PID";
+            break;
+        case ControllerMode::Homing:
+            result = "Homing";
+            break;
+        case ControllerMode::AngleSpeed:
+            result = "Speed";
+            break;
+        default:
+            result = "Unknown";
+            break;
+        }
+    }
+
+    return result;
+}
+
+const QString Monster::getErrorString(uint index) {
+    QString result;
+
+    if (index < 2) {
+        switch (m_error[index]) {
+        case ControllerError::Ok:
+            result = "No";
+            break;
+        case ControllerError::ErrorSensor:
+            result = "Sensor";
+            break;
+        case ControllerError::ErrorHoming:
+            result = "Homing";
+            break;
+        default:
+            result = "Unknown";
+            break;
+        }
+    }
+
     return result;
 }
 
@@ -144,4 +198,8 @@ void Monster::setModeHoming(uint index) {
 void Monster::setPwmHoming(uint index, qreal value) {
     int pwm = qRound(value * 2.55);
     write(QString("set pwm_homing%1 %2\n").arg(index + 1).arg(pwm).toUtf8());
+}
+
+void Monster::resetError(uint index) {
+    write(QString("set reset_error%1\n").arg(index + 1).toUtf8());
 }

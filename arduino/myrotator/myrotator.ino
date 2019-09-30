@@ -23,6 +23,14 @@ void setup() {
 
 void timerEvent() {
     Serial.print("state:");
+    Serial.print((uint8_t)controllerAzm.getMode());
+    Serial.print(",");
+    Serial.print((uint8_t)controllerElv.getMode());
+    Serial.print(",");
+    Serial.print((uint8_t)controllerAzm.getError());
+    Serial.print(",");
+    Serial.print((uint8_t)controllerElv.getError());
+    Serial.print(",");
     Serial.print(controllerAzm.getMotor()->getCurrentSensorValue());
     Serial.print(",");
     Serial.print(controllerElv.getMotor()->getCurrentSensorValue());
@@ -64,29 +72,19 @@ void accept_command(const char *buffer) {
     String line(buffer);
   
     if (line.startsWith("set")) {
-            line = line.substring(3);
-            line.trim();
-            if (line.startsWith("motion1")) {
+        line = line.substring(3);
+        line.trim();
+        if (line.startsWith("motion1")) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            if (value == 0) {
-                controllerAzm.setMode(Controller::Default);
-            }
-            else {
-                controllerAzm.getMotor()->setMotion(value);
-            }
+            controllerAzm.getMotor()->setMotion(value);
         }
         else if (line.startsWith("motion2")) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            if (value == 0) {
-                controllerElv.setMode(Controller::Default);
-            }
-            else {
-                controllerElv.getMotor()->setMotion(value);
-            }
+            controllerElv.getMotor()->setMotion(value);
         }
         else if (line.startsWith("pid1")) {
             controllerAzm.setMode(Controller::Pid);
@@ -149,6 +147,21 @@ void accept_command(const char *buffer) {
             line = line.substring(11);
             line.trim();
             controllerElv.getMotor()->setPwmHoming(line.toInt());
+        }
+        else if (line.startsWith("reset_error1")) {
+            controllerAzm.resetError();
+        }
+        else if (line.startsWith("reset_error2")) {
+            controllerElv.resetError();
+        }
+    }
+    else if (line.startsWith("get")) {
+        line = line.substring(3);
+        line.trim();
+        if (line.startsWith("config")) {
+            Serial.print("config:");
+            Serial.print(",");
+            Serial.println();
         }
     }
 }
