@@ -87,8 +87,16 @@ public:
         m_target = value;
     }
 
-    void setPidTolerance(long value) {
+    void setTolerance(long value) {
         m_tolerance = value;
+    }
+
+    void setAngleMin(long value) {
+        m_angleMin = value;
+    }
+
+    void setAngleMax(long value) {
+        m_angleMax = value;
     }
 
     void resetError() {
@@ -114,7 +122,15 @@ public:
     inline long getTolerance() {
         return m_tolerance;
     }
-    
+
+    inline long getAngleMin() {
+        return m_angleMin;
+    }
+
+    inline long getAngleMax() {
+        return m_angleMax;
+    }
+
     inline const ControllerError &getError() {
         return m_error;
     }

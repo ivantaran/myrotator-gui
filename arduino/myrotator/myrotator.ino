@@ -2,8 +2,10 @@
 #include "Controller.h"
 
 
-Controller controllerAzm = Controller(Controller::Azimuth);
-Controller controllerElv = Controller(Controller::Elevation);
+Controller controller[2] = {
+    Controller(Controller::Azimuth), 
+    Controller(Controller::Elevation)
+};
 
 int ms = 100;
 
@@ -13,8 +15,8 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     Serial.begin(UART_SPEED);
-    controllerAzm.begin();
-    controllerElv.begin();    
+    controller[0].begin();
+    controller[1].begin();    
 
     t0 = millis();
   
@@ -23,49 +25,32 @@ void setup() {
 
 void timerEvent() {
     Serial.print("state:");
-    Serial.print((uint8_t)controllerAzm.getMode());
-    Serial.print(",");
-    Serial.print((uint8_t)controllerElv.getMode());
-    Serial.print(",");
-    Serial.print((uint8_t)controllerAzm.getError());
-    Serial.print(",");
-    Serial.print((uint8_t)controllerElv.getError());
-    Serial.print(",");
-    Serial.print(controllerAzm.getMotor()->getCurrentSensorValue());
-    Serial.print(",");
-    Serial.print(controllerElv.getMotor()->getCurrentSensorValue());
-    Serial.print(",");
-    Serial.print(controllerAzm.getMotor()->getEnDiagValue());
-    Serial.print(",");
-    Serial.print(controllerElv.getMotor()->getEnDiagValue());
-    Serial.print(",");
-    Serial.print(controllerAzm.getMotor()->getPwm());
-    Serial.print(",");
-    Serial.print(controllerElv.getMotor()->getPwm());
-    Serial.print(",");
-    Serial.print(controllerAzm.getMotor()->getInaValue());
-    Serial.print(",");
-    Serial.print(controllerAzm.getMotor()->getInbValue());
-    Serial.print(",");
-    Serial.print(controllerElv.getMotor()->getInaValue());
-    Serial.print(",");
-    Serial.print(controllerElv.getMotor()->getInbValue());
-
-    Serial.print(",");
-    Serial.print(controllerAzm.getSensor()->getAngle());
-    Serial.print(",");
-    Serial.print(controllerElv.getSensor()->getAngle());
-
-
-    Serial.print(",");
-    Serial.print(controllerAzm.getEndstop()->isEnd());
-    Serial.print(",");
-    Serial.print(controllerElv.getEndstop()->isEnd());
+    
+    for (uint8_t i = 0; i < 2; i++) {
+        Serial.print(static_cast<uint8_t>(controller[i].getMode()));
+        Serial.print(",");
+        Serial.print(static_cast<uint8_t>(controller[i].getError()));
+        Serial.print(",");
+        Serial.print(controller[i].getMotor()->getCurrentSensorValue());
+        Serial.print(",");
+        Serial.print(controller[i].getMotor()->getEnDiagValue());
+        Serial.print(",");
+        Serial.print(controller[i].getMotor()->getPwm());
+        Serial.print(",");
+        Serial.print(controller[i].getMotor()->getInaValue());
+        Serial.print(",");
+        Serial.print(controller[i].getMotor()->getInbValue());
+        Serial.print(",");
+        Serial.print(controller[i].getSensor()->getAngle());
+        Serial.print(",");
+        Serial.print(controller[i].getEndstop()->isEnd());
+        Serial.print(",");
+    }
 
     Serial.println();
 
-    controllerAzm.execute();
-    controllerElv.execute();
+    controller[0].execute();
+    controller[1].execute();
 }
 
 void accept_command(const char *buffer) {
@@ -78,81 +63,83 @@ void accept_command(const char *buffer) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            controllerAzm.getMotor()->setMotion(value);
+            controller[0].getMotor()->setMotion(value);
         }
         else if (line.startsWith("motion2")) {
             line = line.substring(7);
             line.trim();
             long value = line.toInt();
-            controllerElv.getMotor()->setMotion(value);
+            controller[1].getMotor()->setMotion(value);
         }
         else if (line.startsWith("pid1")) {
-            controllerAzm.setMode(Controller::Pid);
+            controller[0].setMode(Controller::Pid);
         }
         else if (line.startsWith("pid2")) {
-            controllerElv.setMode(Controller::Pid);
+            controller[1].setMode(Controller::Pid);
         }
         else if (line.startsWith("homing1")) {
-            controllerAzm.setMode(Controller::Homing);
+            controller[0].setMode(Controller::Homing);
         }
         else if (line.startsWith("homing2")) {
-            controllerElv.setMode(Controller::Homing);
+            controller[1].setMode(Controller::Homing);
         }
         else if (line.startsWith("ctrl1_kp")) {
             line = line.substring(8);
             line.trim();
-            controllerAzm.setKp(line.toInt());
+            controller[0].setKp(line.toInt());
         }
         else if (line.startsWith("ctrl1_ki")) {
             line = line.substring(8);
             line.trim();
-            controllerAzm.setKi(line.toInt());
+            controller[0].setKi(line.toInt());
         }
         else if (line.startsWith("ctrl1_kd")) {
             line = line.substring(8);
             line.trim();
-            controllerAzm.setKd(line.toInt());
+            controller[0].setKd(line.toInt());
         }
         else if (line.startsWith("ctrl1_target")) {
             line = line.substring(12);
             line.trim();
-            controllerAzm.setTarget(line.toInt());
+            controller[0].setTarget(line.toInt());
         }
         else if (line.startsWith("ctrl2_kp")) {
             line = line.substring(8);
             line.trim();
-            controllerElv.setKp(line.toInt());
+            controller[1].setKp(line.toInt());
         }
         else if (line.startsWith("ctrl2_ki")) {
             line = line.substring(8);
             line.trim();
-            controllerElv.setKi(line.toInt());
+            controller[1].setKi(line.toInt());
         }
         else if (line.startsWith("ctrl2_kd")) {
             line = line.substring(8);
             line.trim();
-            controllerElv.setKd(line.toInt());
+            controller[1].setKd(line.toInt());
         }
         else if (line.startsWith("ctrl2_target")) {
             line = line.substring(12);
             line.trim();
-            controllerElv.setTarget(line.toInt());
+            controller[1].setTarget(line.toInt());
         }
         else if (line.startsWith("pwm_homing1")) {
             line = line.substring(11);
             line.trim();
-            controllerAzm.getMotor()->setPwmHoming(line.toInt());
+            controller[0].getMotor()->setPwmHoming(line.toInt());
         }
         else if (line.startsWith("pwm_homing2")) {
             line = line.substring(11);
             line.trim();
-            controllerElv.getMotor()->setPwmHoming(line.toInt());
+            controller[1].getMotor()->setPwmHoming(line.toInt());
         }
         else if (line.startsWith("reset_error1")) {
-            controllerAzm.resetError();
+            controller[0].resetError();
+            Serial.println("OLOLO1");
         }
         else if (line.startsWith("reset_error2")) {
-            controllerElv.resetError();
+            controller[1].resetError();
+            Serial.print("OLOLO2");
         }
     }
     else if (line.startsWith("get")) {
@@ -160,7 +147,20 @@ void accept_command(const char *buffer) {
         line.trim();
         if (line.startsWith("config")) {
             Serial.print("config:");
-            Serial.print(",");
+            for (uint8_t i = 0; i < 2; i++) {
+                Serial.print(controller[i].getMotor()->getPwmHoming());
+                Serial.print(",");
+                Serial.print(controller[i].getMotor()->getPwmMin());
+                Serial.print(",");
+                Serial.print(controller[i].getMotor()->getPwmMax());
+                Serial.print(",");
+                Serial.print(controller[i].getAngleMin());
+                Serial.print(",");
+                Serial.print(controller[i].getAngleMax());
+                Serial.print(",");
+                Serial.print(controller[i].getTolerance());
+                Serial.print(",");
+            }
             Serial.println();
         }
     }

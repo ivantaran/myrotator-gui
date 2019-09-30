@@ -147,6 +147,34 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <layout class="QFormLayout" name="formLayout_3">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelMode">
+          <property name="text">
+           <string>Mode</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="labelModeValue">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelError">
+          <property name="text">
+           <string>Error</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelErrorValue">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="0">
          <widget class="QLabel" name="labelEndstop">
           <property name="text">
@@ -190,39 +218,13 @@
          </widget>
         </item>
         <item row="5" column="0">
-         <widget class="QLabel" name="labelAngleMax">
+         <widget class="QLabel" name="labelAngleMin">
           <property name="text">
-           <string>Max angle</string>
+           <string>Angle Min</string>
           </property>
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="leAngleMax">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>8</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="labelAngleMin">
-          <property name="text">
-           <string>Min angle</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="1">
          <widget class="QLineEdit" name="leAngleMin">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -241,31 +243,55 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="labelError">
+        <item row="6" column="0">
+         <widget class="QLabel" name="labelAngleMax">
           <property name="text">
-           <string>Error</string>
+           <string>Angle Max</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QLabel" name="labelErrorValue">
+        <item row="6" column="1">
+         <widget class="QLineEdit" name="leAngleMax">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string/>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="labelMode">
-          <property name="text">
-           <string>Mode</string>
+          <property name="maxLength">
+           <number>8</number>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="labelModeValue">
+        <item row="7" column="0">
+         <widget class="QLabel" name="labelTolerance">
+          <property name="text">
+           <string>Tolerance</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLineEdit" name="leTolerance">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string/>
+          </property>
+          <property name="maxLength">
+           <number>8</number>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
@@ -417,7 +443,6 @@
   <tabstop>buttonPid</tabstop>
   <tabstop>buttonMotionBrake</tabstop>
   <tabstop>leAngleMax</tabstop>
-  <tabstop>leAngleMin</tabstop>
   <tabstop>leKp</tabstop>
   <tabstop>leKi</tabstop>
   <tabstop>leKd</tabstop>

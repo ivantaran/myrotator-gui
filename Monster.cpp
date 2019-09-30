@@ -27,28 +27,20 @@ void Monster::readyReadSlot() {
         if (m_stateLine.contains("state:")) {
             m_stateLine = m_stateLine.remove("state:");
             QStringList list = m_stateLine.split(QChar(','));
-            uint i = 0;
             if (list.count() >= 14) {
-                m_mode[0] = static_cast<ControllerMode>(list.at(i++).toUInt(&ok));
-                m_mode[1] = static_cast<ControllerMode>(list.at(i++).toUInt(&ok));
-                m_error[0] = static_cast<ControllerError>(list.at(i++).toUInt(&ok));
-                m_error[1] = static_cast<ControllerError>(list.at(i++).toUInt(&ok));
-                m_currentSensor[0] = list.at(i++).toUInt(&ok);
-                m_currentSensor[1] = list.at(i++).toUInt(&ok);
-                m_diag[0] = list.at(i++).toUInt(&ok);
-                m_diag[1] = list.at(i++).toUInt(&ok);
-                m_pwm[0] = list.at(i++).toUInt(&ok);
-                m_pwm[1] = list.at(i++).toUInt(&ok);
-                uint ina1 = list.at(i++).toUInt(&ok) & 0x01;
-                uint inb1 = list.at(i++).toUInt(&ok) & 0x01;
-                uint ina2 = list.at(i++).toUInt(&ok) & 0x01;
-                uint inb2 = list.at(i++).toUInt(&ok) & 0x01;
-                m_direction[0] = ina1 | (inb1 << 1);
-                m_direction[1] = ina2 | (inb2 << 1);
-                m_angle[0] = (qreal)list.at(i++).toInt(&ok) / -4096.0 * M_PI;
-                m_angle[1] = (qreal)list.at(i++).toInt(&ok) / -4096.0 * M_PI;
-                m_endstop[0] = list.at(i++).toUInt(&ok) > 0;
-                m_endstop[1] = list.at(i++).toUInt(&ok) > 0;
+                uint position = 0;
+                for (size_t i = 0; i < 2; i++) {
+                    m_mode[i] = static_cast<ControllerMode>(list.at(position++).toUInt(&ok));
+                    m_error[i] = static_cast<ControllerError>(list.at(position++).toUInt(&ok));
+                    m_currentSensor[i] = list.at(position++).toUInt(&ok);
+                    m_diag[i] = list.at(position++).toUInt(&ok);
+                    m_pwm[i] = list.at(position++).toUInt(&ok);
+                    uint ina = list.at(position++).toUInt(&ok) & 0x01;
+                    uint inb = list.at(position++).toUInt(&ok) & 0x01;
+                    m_direction[i] = ina | (inb << 1);
+                    m_angle[i] = (qreal)list.at(position++).toInt(&ok) / -4096.0 * M_PI;
+                    m_endstop[i] = list.at(position++).toUInt(&ok) > 0;
+                }
             }
         }
     }
@@ -201,5 +193,6 @@ void Monster::setPwmHoming(uint index, qreal value) {
 }
 
 void Monster::resetError(uint index) {
+    qWarning() << QString("set reset_error%1\n").arg(index + 1);
     write(QString("set reset_error%1\n").arg(index + 1).toUtf8());
 }
