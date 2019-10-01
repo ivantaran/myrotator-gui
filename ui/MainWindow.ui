@@ -128,6 +128,20 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="buttonGetConfig">
+        <property name="text">
+         <string>get config</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonSetConfig">
+        <property name="text">
+         <string>set config</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

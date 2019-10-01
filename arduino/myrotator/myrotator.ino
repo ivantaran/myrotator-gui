@@ -3,8 +3,8 @@
 
 
 Controller controller[2] = {
-    Controller(Controller::Azimuth), 
-    Controller(Controller::Elevation)
+    Controller(Controller::TypeAzimuth), 
+    Controller(Controller::TypeElevation)
 };
 
 int ms = 100;
@@ -53,100 +53,108 @@ void timerEvent() {
     controller[1].execute();
 }
 
-void accept_command(const char *buffer) {
+typedef enum {
+    CommandGet, 
+    CommandSet, 
+    CommandMotion, 
+    CommandPid, 
+    CommandHoming, 
+    CommandPwmHoming, 
+    CommandKp, 
+    CommandKi, 
+    CommandKd, 
+    CommandTarget, 
+    CommandResetError,
+    CommandConfig
+} command_e;
+
+struct command_table_tag {
+    const char *name;
+    size_t len;
+};
+
+command_table_tag command_table[] {
+    { "get"         , strlen(command_table[CommandGet       ].name) },
+    { "set"         , strlen(command_table[CommandSet       ].name) },
+    { "motion"      , strlen(command_table[CommandMotion    ].name) },
+    { "pid"         , strlen(command_table[CommandPid       ].name) },
+    { "homing"      , strlen(command_table[CommandHoming    ].name) },
+    { "pwm_homing"  , strlen(command_table[CommandPwmHoming ].name) },
+    { "kp"          , strlen(command_table[CommandKp        ].name) },
+    { "ki"          , strlen(command_table[CommandKi        ].name) },
+    { "kd"          , strlen(command_table[CommandKd        ].name) },
+    { "target"      , strlen(command_table[CommandTarget    ].name) },
+    { "reseterr"    , strlen(command_table[CommandResetError].name) },
+    { "config"      , strlen(command_table[CommandConfig    ].name) },
+};
+
+void acceptCommand(const char *buffer) {
     String line(buffer);
-  
-    if (line.startsWith("set")) {
-        line = line.substring(3);
+    size_t addr;
+
+    if (line.startsWith(command_table[CommandSet].name)) {
+        line = line.substring(command_table[CommandSet].len);
         line.trim();
-        if (line.startsWith("motion1")) {
-            line = line.substring(7);
+        
+        if (line[0] == '0') {
+            addr = 0;
+        }
+        else if (line[0] == '1') {
+            addr = 1;
+        }
+        else {
+            return;
+        }
+        line = line.substring(1);
+        line.trim();
+
+        if (line.startsWith(command_table[CommandMotion].name)) {
+            line = line.substring(command_table[CommandMotion].len);
             line.trim();
             long value = line.toInt();
-            controller[0].getMotor()->setMotion(value);
+            controller[addr].getMotor()->setMotion(value);
         }
-        else if (line.startsWith("motion2")) {
-            line = line.substring(7);
+        else if (line.startsWith(command_table[CommandPid].name)) {
+            controller[addr].setMode(Controller::ModePid);
+        }
+        else if (line.startsWith(command_table[CommandHoming].name)) {
+            controller[addr].setMode(Controller::ModeHoming);
+        }
+        else if (line.startsWith(command_table[CommandKp].name)) {
+            line = line.substring(command_table[CommandKp].len);
             line.trim();
-            long value = line.toInt();
-            controller[1].getMotor()->setMotion(value);
+            controller[addr].setKp(line.toInt());
         }
-        else if (line.startsWith("pid1")) {
-            controller[0].setMode(Controller::Pid);
-        }
-        else if (line.startsWith("pid2")) {
-            controller[1].setMode(Controller::Pid);
-        }
-        else if (line.startsWith("homing1")) {
-            controller[0].setMode(Controller::Homing);
-        }
-        else if (line.startsWith("homing2")) {
-            controller[1].setMode(Controller::Homing);
-        }
-        else if (line.startsWith("ctrl1_kp")) {
-            line = line.substring(8);
+        else if (line.startsWith(command_table[CommandKi].name)) {
+            line = line.substring(command_table[CommandKi].len);
             line.trim();
-            controller[0].setKp(line.toInt());
+            controller[addr].setKi(line.toInt());
         }
-        else if (line.startsWith("ctrl1_ki")) {
-            line = line.substring(8);
+        else if (line.startsWith(command_table[CommandKd].name)) {
+            line = line.substring(command_table[CommandKd].len);
             line.trim();
-            controller[0].setKi(line.toInt());
+            controller[addr].setKd(line.toInt());
         }
-        else if (line.startsWith("ctrl1_kd")) {
-            line = line.substring(8);
-            line.trim();
-            controller[0].setKd(line.toInt());
-        }
-        else if (line.startsWith("ctrl1_target")) {
-            line = line.substring(12);
+        else if (line.startsWith(command_table[CommandTarget].name)) {
+            line = line.substring(command_table[CommandTarget].len);
             line.trim();
             controller[0].setTarget(line.toInt());
         }
-        else if (line.startsWith("ctrl2_kp")) {
-            line = line.substring(8);
+        else if (line.startsWith(command_table[CommandPwmHoming].name)) {
+            line = line.substring(command_table[CommandPwmHoming].len);
             line.trim();
-            controller[1].setKp(line.toInt());
+            controller[addr].getMotor()->setPwmHoming(line.toInt());
         }
-        else if (line.startsWith("ctrl2_ki")) {
-            line = line.substring(8);
-            line.trim();
-            controller[1].setKi(line.toInt());
-        }
-        else if (line.startsWith("ctrl2_kd")) {
-            line = line.substring(8);
-            line.trim();
-            controller[1].setKd(line.toInt());
-        }
-        else if (line.startsWith("ctrl2_target")) {
-            line = line.substring(12);
-            line.trim();
-            controller[1].setTarget(line.toInt());
-        }
-        else if (line.startsWith("pwm_homing1")) {
-            line = line.substring(11);
-            line.trim();
-            controller[0].getMotor()->setPwmHoming(line.toInt());
-        }
-        else if (line.startsWith("pwm_homing2")) {
-            line = line.substring(11);
-            line.trim();
-            controller[1].getMotor()->setPwmHoming(line.toInt());
-        }
-        else if (line.startsWith("reset_error1")) {
-            controller[0].resetError();
-            Serial.println("OLOLO1");
-        }
-        else if (line.startsWith("reset_error2")) {
-            controller[1].resetError();
-            Serial.print("OLOLO2");
+        else if (line.startsWith(command_table[CommandResetError].name)) {
+            controller[addr].resetError();
         }
     }
-    else if (line.startsWith("get")) {
-        line = line.substring(3);
+    else if (line.startsWith(command_table[CommandGet].name)) {
+        line = line.substring(command_table[CommandGet].len);
         line.trim();
-        if (line.startsWith("config")) {
-            Serial.print("config:");
+        if (line.startsWith(command_table[CommandConfig].name)) {
+            Serial.print(command_table[CommandConfig].name);
+            Serial.print(':');
             for (uint8_t i = 0; i < 2; i++) {
                 Serial.print(controller[i].getMotor()->getPwmHoming());
                 Serial.print(",");
@@ -166,7 +174,7 @@ void accept_command(const char *buffer) {
     }
 }
 
-void accept_serial() {
+void acceptSerial() {
     static char buffer[64];
     static unsigned char pointer = 0;
     
@@ -175,7 +183,7 @@ void accept_serial() {
 
         if (buffer[pointer] == '\n') {
             buffer[pointer] = '\0';
-            accept_command(buffer);
+            acceptCommand(buffer);
             pointer = 0;
         }
         else if (pointer < sizeof(buffer) - 1) {
@@ -193,5 +201,5 @@ void loop() {
         timerEvent();
     }
     
-    accept_serial();
+    acceptSerial();
 }

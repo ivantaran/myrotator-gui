@@ -43,6 +43,20 @@ void Monster::readyReadSlot() {
                 }
             }
         }
+        else if (m_stateLine.contains("config:")) {
+            QStringList list = m_stateLine.split(QChar(','));
+            if (list.count() >= 12) {
+                uint position = 0;
+                for (size_t i = 0; i < 2; i++) {
+                    m_pwmHoming[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
+                    m_pwmMin[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
+                    m_pwmMax[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
+                    m_angleMin[i] = (qreal)list.at(position++).toInt(&ok) / -4096.0 * M_PI;
+                    m_angleMax[i] = (qreal)list.at(position++).toInt(&ok) / -4096.0 * M_PI;
+                    m_tolerance[i] = (qreal)list.at(position++).toInt(&ok) / 4096.0 * M_PI;
+                }
+            }
+        }
     }
 }
 
@@ -96,16 +110,16 @@ const QString Monster::getModeString(uint index) {
 
     if (index < 2) {
         switch (m_mode[index]) {
-        case ControllerMode::Default:
+        case ModeDefault:
             result = "Default";
             break;
-        case ControllerMode::Pid:
+        case ModePid:
             result = "PID";
             break;
-        case ControllerMode::Homing:
+        case ModeHoming:
             result = "Homing";
             break;
-        case ControllerMode::AngleSpeed:
+        case ModeSpeed:
             result = "Speed";
             break;
         default:
@@ -122,13 +136,13 @@ const QString Monster::getErrorString(uint index) {
 
     if (index < 2) {
         switch (m_error[index]) {
-        case ControllerError::Ok:
+        case ErrorOk:
             result = "No";
             break;
-        case ControllerError::ErrorSensor:
+        case ErrorSensor:
             result = "Sensor";
             break;
-        case ControllerError::ErrorHoming:
+        case ErrorHoming:
             result = "Homing";
             break;
         default:
@@ -154,19 +168,17 @@ bool Monster::isEndstop(uint index) {
 
 void Monster::setMotion(uint index, qreal value) {
     int pwm = qRound(value * 2.55);
-    write(QString("set motion%1 %2\n").arg(index + 1).arg(pwm).toUtf8());
+    write(QString("set %1 motion %2\n").arg(index).arg(pwm).toUtf8());
 }
 
 void Monster::setController(uint index, int kp, int ki, int kd) {
-    qWarning() << QString("set ctrl%1_kp %2\n").arg(index + 1).arg(kp).toUtf8() << "\n";
-
-    write(QString("set ctrl%1_kp %2\n").arg(index + 1).arg(kp).toUtf8());
-    write(QString("set ctrl%1_ki %2\n").arg(index + 1).arg(ki).toUtf8());
-    write(QString("set ctrl%1_kd %2\n").arg(index + 1).arg(kd).toUtf8());
+    write(QString("set %1 kp %2\n").arg(index).arg(kp).toUtf8());
+    write(QString("set %1 ki %2\n").arg(index).arg(ki).toUtf8());
+    write(QString("set %1 kd %2\n").arg(index).arg(kd).toUtf8());
 }
 
 void Monster::setTargetLinear(uint index, int angle) {
-    write(QString("set ctrl%1_target %2\n").arg(index + 1).arg(angle).toUtf8());
+    write(QString("set %1 target %2\n").arg(index).arg(angle).toUtf8());
 }
 
 void Monster::setTargetRadians(uint index, qreal angle) {
@@ -180,19 +192,22 @@ void Monster::setTargetDegrees(uint index, qreal angle) {
 }
 
 void Monster::setModePid(uint index) {
-    write(QString("set pid%1\n").arg(index + 1).toUtf8());
+    write(QString("set %1 pid\n").arg(index).toUtf8());
 }
 
 void Monster::setModeHoming(uint index) {
-    write(QString("set homing%1\n").arg(index + 1).toUtf8());
+    write(QString("set %1 homing\n").arg(index).toUtf8());
 }
 
 void Monster::setPwmHoming(uint index, qreal value) {
     int pwm = qRound(value * 2.55);
-    write(QString("set pwm_homing%1 %2\n").arg(index + 1).arg(pwm).toUtf8());
+    write(QString("set %1 pwm_homing %2\n").arg(index).arg(pwm).toUtf8());
 }
 
 void Monster::resetError(uint index) {
-    qWarning() << QString("set reset_error%1\n").arg(index + 1);
-    write(QString("set reset_error%1\n").arg(index + 1).toUtf8());
+    write(QString("set %1 reseterr\n").arg(index).toUtf8());
+}
+
+void Monster::requestConfigSlot() {
+    write(QString("get config\n").toUtf8());
 }

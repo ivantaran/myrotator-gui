@@ -9,19 +9,19 @@ class Controller {
 
 public:
     typedef enum {
-        Azimuth = 0, 
-        Elevation = 1
+        TypeAzimuth = 0, 
+        TypeElevation = 1
     } ControllerType;
 
     typedef enum {
-        Default = 0,
-        Pid = 1,
-        Homing = 2,
-        AngleSpeed = 3
+        ModeDefault = 0,
+        ModePid = 1,
+        ModeHoming = 2,
+        ModeAngleSpeed = 3
     } ControllerMode;
     
     typedef enum {
-        Ok = 0, 
+        ErrorOk = 0, 
         ErrorSensor = 1, 
         ErrorHoming = 2, 
     } ControllerError;
@@ -34,18 +34,18 @@ public:
         m_tolerance = 0;
         m_angleMin = 0;
         m_angleMax = 4095;
-        m_mode = ControllerMode::Default;
-        m_error = ControllerError::Ok;
+        m_mode = ModeDefault;
+        m_error = ErrorOk;
 
         resetPid();
 
         switch (type) {
-        case ControllerType::Elevation:
+        case TypeElevation:
             m_motor = new MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
             m_endstop = new Endstop(11);
             m_sensor = new As5601(As5601::Software);
             break;
-        case ControllerType::Azimuth:
+        case TypeAzimuth:
         default:
             m_motor = new MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
             m_endstop = new Endstop(10);
@@ -65,7 +65,7 @@ public:
     }
 
     void setMode(const ControllerMode &mode) {
-        if (m_error == ControllerError::Ok) {
+        if (m_error == ErrorOk) {
             m_mode = mode;
         }
         resetPid();
@@ -100,7 +100,7 @@ public:
     }
 
     void resetError() {
-        m_error = ControllerError::Ok;
+        m_error = ErrorOk;
     }
 
     inline const ControllerMode &getMode() {
@@ -139,19 +139,19 @@ public:
         m_sensor->requestSensorValue();
         
         if (!m_sensor->isValid()) {
-            setError(ControllerError::ErrorSensor);
+            setError(ErrorSensor);
         }
 
         switch (m_mode) {
-        case ControllerMode::Pid:
+        case ModePid:
             pid();
             break;
-        case ControllerMode::Homing:
+        case ModeHoming:
             homing();
             break;
-        case ControllerMode::AngleSpeed:
+        case ModeAngleSpeed:
             break;
-        case ControllerMode::Default:
+        case ModeDefault:
         default:
             break;
 
@@ -229,11 +229,11 @@ private:
 
     void homing() {
         if (abs(m_sensor->getAngle()) > m_angleMax) {
-            setError(ControllerError::ErrorHoming);
+            setError(ErrorHoming);
         }
         else {
             if (m_endstop->isEnd()) {
-                setMode(ControllerMode::Default);
+                setMode(ModeDefault);
                 m_sensor->setZero();
             } else {
                 m_motor->setMotion(m_motor->getPwmHoming());
@@ -245,15 +245,15 @@ private:
         m_error = error;
         
         switch (m_error) {
-        case ControllerError::ErrorHoming:
+        case ErrorHoming:
             m_sensor->resetOffset();
             break;
         default:
             break;
         }
 
-        if (m_error != ControllerError::Ok) {
-            setMode(ControllerMode::Default);
+        if (m_error != ErrorOk) {
+            setMode(ModeDefault);
         }
     }
 
