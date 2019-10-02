@@ -16,7 +16,7 @@ class Monster : public QSerialPort {
 public:
     Monster();
     virtual ~Monster();
-    uint getPwm(uint index);
+    qreal getPwm(uint index);
     uint getCurrentAdc(uint index);
     qreal getCurrentAmp(uint index);
     uint getDiag(uint index);
@@ -24,12 +24,14 @@ public:
     const QString getDirectionString(uint index);
     const QString getModeString(uint index);
     const QString getErrorString(uint index);
-    qreal getAngleRadians(uint index);
-    qreal getAngleDegrees(uint index);
+    qreal getAngle(uint index);
     bool isEndstop(uint index);
-    qreal getSpeedHoming(uint index);
-    qreal getSpeedMin(uint index);
-    qreal getSpeedMax(uint index);
+    qreal getPwmHoming(uint index);
+    qreal getPwmMin(uint index);
+    qreal getPwmMax(uint index);
+    qreal getAngleMin(uint index);
+    qreal getAngleMax(uint index);
+    qreal getTolerance(uint index);
 
     void setMotion(uint index, qreal value);
     void setController(uint index, int kp, int ki, int kd);
@@ -39,6 +41,11 @@ public:
     void setModePid(uint index);
     void setModeHoming(uint index);
     void setPwmHoming(uint index, qreal value);
+    void setPwmMin(uint index, qreal value);
+    void setPwmMax(uint index, qreal value);
+    void setAngleMin(uint index, qreal value);
+    void setAngleMax(uint index, qreal value);
+    void setTolerance(uint index, qreal value);
     void resetError(uint index);
 
 private:
@@ -58,7 +65,7 @@ private:
     QString m_stateLine;
     ControllerMode m_mode[2] = { ModeDefault, ModeDefault };
     ControllerError m_error[2] = { ErrorOk, ErrorOk };
-    uint m_pwm[2] = { 0, 0 };   // TODO set to qreal
+    qreal m_pwm[2] = { 0.0, 0.0 };
     uint m_currentSensor[2] = { 0, 0 };
     uint m_diag[2] = { 0, 0 };
     uint m_direction[2] = { 0, 0 };

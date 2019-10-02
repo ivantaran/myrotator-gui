@@ -34,7 +34,7 @@ void Monster::readyReadSlot() {
                     m_error[i] = static_cast<ControllerError>(list.at(position++).toUInt(&ok));
                     m_currentSensor[i] = list.at(position++).toUInt(&ok);
                     m_diag[i] = list.at(position++).toUInt(&ok);
-                    m_pwm[i] = list.at(position++).toUInt(&ok);
+                    m_pwm[i] = (qreal)list.at(position++).toUInt(&ok) / 2.55;
                     uint ina = list.at(position++).toUInt(&ok) & 0x01;
                     uint inb = list.at(position++).toUInt(&ok) & 0x01;
                     m_direction[i] = ina | (inb << 1);
@@ -44,6 +44,7 @@ void Monster::readyReadSlot() {
             }
         }
         else if (m_stateLine.contains("config:")) {
+            m_stateLine = m_stateLine.remove("config:");
             QStringList list = m_stateLine.split(QChar(','));
             if (list.count() >= 12) {
                 uint position = 0;
@@ -60,7 +61,7 @@ void Monster::readyReadSlot() {
     }
 }
 
-uint Monster::getPwm(uint index) {
+qreal Monster::getPwm(uint index) {
     return index < 2 ? m_pwm[index] : 0;
 }
 
@@ -154,16 +155,36 @@ const QString Monster::getErrorString(uint index) {
     return result;
 }
 
-qreal Monster::getAngleRadians(uint index) {
+qreal Monster::getAngle(uint index) {
     return index < 2 ? m_angle[index] : 0.0;
-}
-
-qreal Monster::getAngleDegrees(uint index) {
-    return qRadiansToDegrees(getAngleRadians(index));
 }
 
 bool Monster::isEndstop(uint index) {
     return index < 2 ? m_endstop[index] : true;
+}
+
+qreal Monster::getPwmHoming(uint index) {
+    return index < 2 ? m_pwmHoming[index] : 0.0;
+}
+
+qreal Monster::getPwmMin(uint index) {
+    return index < 2 ? m_pwmMin[index] : 0.0;
+}
+
+qreal Monster::getPwmMax(uint index) {
+    return index < 2 ? m_pwmMax[index] : 0.0;
+}
+
+qreal Monster::getAngleMin(uint index) {
+    return index < 2 ? m_angleMin[index] : 0.0;
+}
+
+qreal Monster::getAngleMax(uint index) {
+    return index < 2 ? m_angleMax[index] : 0.0;
+}
+
+qreal Monster::getTolerance(uint index) {
+    return index < 2 ? m_tolerance[index] : 0.0;
 }
 
 void Monster::setMotion(uint index, qreal value) {
@@ -200,6 +221,11 @@ void Monster::setModeHoming(uint index) {
 }
 
 void Monster::setPwmHoming(uint index, qreal value) {
+    int pwm = qRound(value * 2.55);
+    write(QString("set %1 pwm_homing %2\n").arg(index).arg(pwm).toUtf8());
+}
+
+void Monster::setPwmMin(uint index, qreal value) {
     int pwm = qRound(value * 2.55);
     write(QString("set %1 pwm_homing %2\n").arg(index).arg(pwm).toUtf8());
 }

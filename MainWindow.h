@@ -48,10 +48,11 @@ private slots:
     void resetErrorElvSlot();
     void setModeHomingAzmSlot();
     void setModeHomingElvSlot();
-    void setPwmHomingAzmSlot();
-    void setPwmHomingElvSlot();
     void setModePidAzmSlot();
     void setModePidElvSlot();
+    void setConfigAzmSlot();
+    void setConfigElvSlot();
+
 };
 
 #endif /* MAINWINDOW_H_ */
