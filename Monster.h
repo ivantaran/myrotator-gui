@@ -35,18 +35,13 @@ public:
 
     void setMotion(uint index, qreal value);
     void setController(uint index, int kp, int ki, int kd);
-    void setTargetLinear(uint index, int angle);
-    void setTargetRadians(uint index, qreal angle);
-    void setTargetDegrees(uint index, qreal angle);
-    void setModePid(uint index);
+    void setTarget(uint index, qreal angle);
+    void setModeDefault(uint index);
+    void setModePid(uint index, int kp, int ki, int kd);
     void setModeHoming(uint index);
-    void setPwmHoming(uint index, qreal value);
-    void setPwmMin(uint index, qreal value);
-    void setPwmMax(uint index, qreal value);
-    void setAngleMin(uint index, qreal value);
-    void setAngleMax(uint index, qreal value);
-    void setTolerance(uint index, qreal value);
+    void setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance);
     void resetError(uint index);
+    void readSettings(const QString &fileName);
 
 private:
     typedef enum {
@@ -78,6 +73,8 @@ private:
     qreal m_angleMin[2] = { 0.0, 0.0 };
     qreal m_angleMax[2] = { 0.0, 0.0 };
     qreal m_tolerance[2] = { 0.0, 0.0 };
+    
+    void readConfig(uint index, const QJsonObject &jsonObject);
 
 private slots:
     void readyReadSlot();

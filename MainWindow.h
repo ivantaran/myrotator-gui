@@ -27,7 +27,7 @@ private:
     Radar m_radar;
     QDoubleValidator m_doubleValidator;
 
-    void setController(uint index);
+    void setModePid(uint index);
     void setTarget(uint index);
 
 private slots:
@@ -52,7 +52,7 @@ private slots:
     void setModePidElvSlot();
     void setConfigAzmSlot();
     void setConfigElvSlot();
-
+    void readSettingsSlot();
 };
 
 #endif /* MAINWINDOW_H_ */

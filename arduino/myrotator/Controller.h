@@ -9,11 +9,6 @@ class Controller {
 
 public:
     typedef enum {
-        TypeAzimuth = 0, 
-        TypeElevation = 1
-    } ControllerType;
-
-    typedef enum {
         ModeDefault = 0,
         ModePid = 1,
         ModeHoming = 2,
@@ -26,32 +21,21 @@ public:
         ErrorHoming = 2, 
     } ControllerError;
 
-    Controller(const ControllerType &type) {
+    Controller(MyMotor *motor, Endstop *endstop, As5601 *sensor) {
         m_kp = 0;
         m_ki = 0;
         m_kd = 0;
         m_target = 0;
         m_tolerance = 0;
         m_angleMin = 0;
-        m_angleMax = 4095;
+        m_angleMax = 0;
         m_mode = ModeDefault;
         m_error = ErrorOk;
+        m_motor = motor;
+        m_endstop = endstop;
+        m_sensor = sensor;
 
         resetPid();
-
-        switch (type) {
-        case TypeElevation:
-            m_motor = new MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2);
-            m_endstop = new Endstop(11);
-            m_sensor = new As5601(As5601::Software);
-            break;
-        case TypeAzimuth:
-        default:
-            m_motor = new MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1);
-            m_endstop = new Endstop(10);
-            m_sensor = new As5601(As5601::Hardware);
-            break;
-        }
     }
 
     virtual ~Controller() {
@@ -65,8 +49,16 @@ public:
     }
 
     void setMode(const ControllerMode &mode) {
-        if (m_error == ErrorOk) {
+        if (mode == ModeDefault || m_error == ErrorOk) {
             m_mode = mode;
+
+            switch (m_mode) {
+            case ModeHoming:
+                m_sensor->resetOffset();
+                break;
+            default:
+                break;
+            }
         }
         resetPid();
     }

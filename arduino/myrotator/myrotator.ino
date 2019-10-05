@@ -2,15 +2,30 @@
 #include "Controller.h"
 
 
-Controller controller[2] = {
-    Controller(Controller::TypeAzimuth), 
-    Controller(Controller::TypeElevation)
+static MyMotor motor[2] = {
+    MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1), 
+    MyMotor(PIN_INA2, PIN_INB2, PIN_CS2, PIN_EN2, PIN_PWM2), 
+};
+
+static Endstop endstop[2] = {
+    Endstop(10), 
+    Endstop(11),
+};
+
+static As5601 sensor[2] = {
+    As5601(As5601::Hardware),
+    As5601(As5601::Software),
+};
+
+static Controller controller[2] = {
+    Controller(&motor[0], &endstop[0], &sensor[0]), 
+    Controller(&motor[1], &endstop[1], &sensor[1]), 
 };
 
 int ms = 100;
 
 unsigned long t0 = 0;
-const char *delimeters = " ";
+const char *delimeters = " ,";
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -58,11 +73,9 @@ typedef enum {
     CommandGet, 
     CommandSet, 
     CommandMotion, 
+    CommandDefault,  
     CommandPid, 
     CommandHoming, 
-    CommandKp, 
-    CommandKi, 
-    CommandKd, 
     CommandTarget, 
     CommandResetError,
     CommandConfig
@@ -72,18 +85,16 @@ const char* command_table[] {
     "get"     ,
     "set"     ,
     "motion"  ,
+    "default" ,
     "pid"     ,
     "homing"  ,
-    "kp"      ,
-    "ki"      ,
-    "kd"      ,
     "target"  ,
     "reseterr",
     "config"  ,
 };
 
 void sendConfig() {
-    Serial.print(command_table[CommandConfig].name);
+    Serial.print(command_table[CommandConfig]);
     Serial.print(':');
     for (uint8_t i = 0; i < 2; i++) {
         Serial.print(controller[i].getMotor()->getPwmHoming());
@@ -103,18 +114,77 @@ void sendConfig() {
 }
 
 void acceptConfig(size_t addr, char *string){
+    int value;
+    uint8_t i;
+    for (i = 0 ; i < 6; i++) {
+        value = atoi(string);
+        switch (i) {
+        case 0:
+            controller[addr].getMotor()->setPwmHoming(value);
+            break;
+        case 1:
+            controller[addr].getMotor()->setPwmMin(value);
+            break;
+        case 2:
+            controller[addr].getMotor()->setPwmMax(value);
+            break;
+        case 3:
+            controller[addr].setAngleMin(value);
+            break;
+        case 4:
+            controller[addr].setAngleMax(value);
+            break;
+        case 5:
+            controller[addr].setTolerance(value);
+            break;
+        default:
+            break;
+        }
+        string = strtok(NULL, delimeters);
+        if (string == NULL) {
+            return;
+        }
+    }
+}
 
-    controller[addr].getMotor()->setPwmHoming(line.toInt());
+void acceptPid(size_t addr, char *string){
+    int value;
+    uint8_t i;
+    for (i = 0 ; i < 3; i++) {
+        value = atoi(string);
+        switch (i) {
+        case 0:
+            controller[addr].setKp(value);
+            break;
+        case 1:
+            controller[addr].setKi(value);
+            break;
+        case 2:
+            controller[addr].setKd(value);
+            break;
+        default:
+            break;
+        }
+        string = strtok(NULL, delimeters);
+        if (string == NULL) {
+            return;
+        }
+    }
 }
 
 void acceptCommand(char *buffer) {
-    String line(buffer);
     size_t addr;
+    int value;
     char *string = buffer;
+
     string = strtok(string, delimeters);
-    
+    if (string == NULL) {
+        return;
+    }
+
     if (strstr(string, command_table[CommandSet]) != NULL) {
-        string = strtok(string, delimeters);
+        string = strtok(NULL, delimeters);
+
         if (string == NULL) {
             return;
         }
@@ -128,85 +198,51 @@ void acceptCommand(char *buffer) {
             return;
         }
 
-        string = strtok(string, delimeters);
+        string = strtok(NULL, delimeters);
         if (string == NULL) {
             return;
         }
         else if (strstr(string, command_table[CommandConfig]) != NULL) {
-            string = strtok(string, delimeters);
+            string = strtok(NULL, delimeters);
             if (string != NULL) {
                 acceptConfig(addr, string);
             }
+            sendConfig();
+        }
+        else if (strstr(string, command_table[CommandDefault]) != NULL) {
+            controller[addr].setMode(Controller::ModeDefault);
+        }
+        else if (strstr(string, command_table[CommandPid]) != NULL) {
+            string = strtok(NULL, delimeters);
+            if (string != NULL) {
+                acceptPid(addr, string);
+                controller[addr].setMode(Controller::ModePid);
+            }
+        }
+        else if (strstr(string, command_table[CommandHoming]) != NULL) {
+            controller[addr].setMode(Controller::ModeHoming);
+        }
+        else if (strstr(string, command_table[CommandTarget]) != NULL) {
+            string = strtok(NULL, delimeters);
+            if (string != NULL) {
+                value = atoi(string);
+                controller[addr].setTarget(value);
+            }
+        }
+        else if (strstr(string, command_table[CommandMotion]) != NULL) {
+            string = strtok(NULL, delimeters);
+            if (string != NULL) {
+                value = atoi(string);
+                controller[addr].getMotor()->setMotion(value);
+            }
+        }
+        else if (strstr(string, command_table[CommandResetError]) != NULL) {
+            controller[addr].resetError();
         }
     }
     else if (strstr(string, command_table[CommandGet]) != NULL) {
-
+        sendConfig();
     }
-
-    // if (string != NULL) {
-    //     line = line.substring(command_table[CommandSet].len);
-    //     line.trim();
-        
-    //     if (line[0] == '0') {
-    //         addr = 0;
-    //     }
-    //     else if (line[0] == '1') {
-    //         addr = 1;
-    //     }
-    //     else {
-    //         return;
-    //     }
-    //     line = line.substring(1);
-    //     line.trim();
-
-    //     if (line.startsWith(command_table[CommandMotion].name)) {
-    //         line = line.substring(command_table[CommandMotion].len);
-    //         line.trim();
-    //         controller[addr].getMotor()->setMotion(line.toInt());
-    //     }
-    //     else if (line.startsWith(command_table[CommandPid].name)) {
-    //         controller[addr].setMode(Controller::ModePid);
-    //     }
-    //     else if (line.startsWith(command_table[CommandHoming].name)) {
-    //         controller[addr].setMode(Controller::ModeHoming);
-    //     }
-    //     else if (line.startsWith(command_table[CommandKp].name)) {
-    //         line = line.substring(command_table[CommandKp].len);
-    //         line.trim();
-    //         controller[addr].setKp(line.toInt());
-    //     }
-    //     else if (line.startsWith(command_table[CommandKi].name)) {
-    //         line = line.substring(command_table[CommandKi].len);
-    //         line.trim();
-    //         controller[addr].setKi(line.toInt());
-    //     }
-    //     else if (line.startsWith(command_table[CommandKd].name)) {
-    //         line = line.substring(command_table[CommandKd].len);
-    //         line.trim();
-    //         controller[addr].setKd(line.toInt());
-    //     }
-    //     else if (line.startsWith(command_table[CommandTarget].name)) {
-    //         line = line.substring(command_table[CommandTarget].len);
-    //         line.trim();
-    //         controller[0].setTarget(line.toInt());
-    //     }
-    //     else if (line.startsWith(command_table[CommandConfig].name)) {
-    //         line = line.substring(command_table[CommandConfig].len);
-    //         line.trim();
-    //         acceptConfig(addr, line);
-    //         sendConfig();
-    //     }
-    //     else if (line.startsWith(command_table[CommandResetError].name)) {
-    //         controller[addr].resetError();
-    //     }
-    // }
-    // else if (line.startsWith(command_table[CommandGet].name)) {
-    //     line = line.substring(command_table[CommandGet].len);
-    //     line.trim();
-    //     if (line.startsWith(command_table[CommandConfig].name)) {
-    //         sendConfig();
-    //     }
-    // }
 }
 
 void acceptSerial() {

@@ -29,6 +29,7 @@ MainWindow::MainWindow() {
     connect(m_widget.buttonOpen, SIGNAL(clicked()), this, SLOT(openPortSlot()));
     connect(m_widget.buttonClose, SIGNAL(clicked()), this, SLOT(closePortSlot()));
     connect(m_widget.buttonGetConfig, SIGNAL(clicked()), &m_monster, SLOT(requestConfigSlot()));
+    connect(m_widget.buttonSetConfig, SIGNAL(clicked()), this, SLOT(readSettingsSlot()));
 
     connect(m_stateWidget[0].buttonHoming, SIGNAL(clicked()), this, SLOT(setModeHomingAzmSlot()));
     connect(m_stateWidget[0].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionAzmSlot()));
@@ -41,12 +42,12 @@ MainWindow::MainWindow() {
     connect(m_stateWidget[0].leTarget, SIGNAL(editingFinished()), this, SLOT(setTargetAzmSlot()));
     connect(m_stateWidget[0].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionAzmSlot()));
 
-    connect(m_stateWidget[0].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
-    connect(m_stateWidget[0].lePwmMin, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
-    connect(m_stateWidget[0].lePwmMax, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
-    connect(m_stateWidget[0].leAngleMin, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
-    connect(m_stateWidget[0].leAngleMax, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
-    connect(m_stateWidget[0].leTolerance, SIGNAL(editingFinished()), this, SLOT(setPwmHomingAzmSlot()));
+    connect(m_stateWidget[0].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
+    connect(m_stateWidget[0].lePwmMin, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
+    connect(m_stateWidget[0].lePwmMax, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
+    connect(m_stateWidget[0].leAngleMin, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
+    connect(m_stateWidget[0].leAngleMax, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
+    connect(m_stateWidget[0].leTolerance, SIGNAL(editingFinished()), this, SLOT(setConfigAzmSlot()));
 
     connect(m_stateWidget[1].buttonMotionBrake, SIGNAL(clicked()), this, SLOT(brakeMotionElvSlot()));
     connect(m_stateWidget[1].buttonResetError, SIGNAL(clicked()), this, SLOT(resetErrorElvSlot()));
@@ -59,12 +60,12 @@ MainWindow::MainWindow() {
     connect(m_stateWidget[1].leTarget, SIGNAL(editingFinished()), this, SLOT(setTargetElvSlot()));
     connect(m_stateWidget[1].lePwm, SIGNAL(editingFinished()), this, SLOT(setMotionElvSlot()));
 
-    connect(m_stateWidget[1].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
-    connect(m_stateWidget[1].lePwmMin, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
-    connect(m_stateWidget[1].lePwmMax, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
-    connect(m_stateWidget[1].leAngleMin, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
-    connect(m_stateWidget[1].leAngleMax, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
-    connect(m_stateWidget[1].leTolerance, SIGNAL(editingFinished()), this, SLOT(setPwmHomingElvSlot()));
+    connect(m_stateWidget[1].lePwmHoming, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
+    connect(m_stateWidget[1].lePwmMin, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
+    connect(m_stateWidget[1].lePwmMax, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
+    connect(m_stateWidget[1].leAngleMin, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
+    connect(m_stateWidget[1].leAngleMax, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
+    connect(m_stateWidget[1].leTolerance, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
 
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
@@ -95,6 +96,7 @@ void MainWindow::openPortSlot() {
         m_monster.setPort(info);
         bool ok = m_monster.open(QIODevice::ReadWrite);
         if (ok) {
+            m_monster.requestConfigSlot();
         }
         else {
             qWarning() << m_monster.errorString();
@@ -205,40 +207,36 @@ void MainWindow::setMotionElvSlot() {
 
 void MainWindow::setConfigAzmSlot() {
     bool ok;
-    qreal value;
-    value = m_stateWidget[0].lePwmHoming->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
 
-    value = m_stateWidget[0].lePwmMin->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
+    qreal pwmHoming = m_stateWidget[0].lePwmHoming->text().toDouble(&ok);
+    qreal pwmMin = m_stateWidget[0].lePwmMin->text().toDouble(&ok);
+    qreal pwmMax = m_stateWidget[0].lePwmMax->text().toDouble(&ok);
+    qreal angleMin = qDegreesToRadians(m_stateWidget[0].leAngleMin->text().toDouble(&ok));
+    qreal angleMax = qDegreesToRadians(m_stateWidget[0].leAngleMax->text().toDouble(&ok));
+    qreal tolerance = qDegreesToRadians(m_stateWidget[0].leTolerance->text().toDouble(&ok));
 
-    value = m_stateWidget[0].lePwmMax->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
-
-    value = m_stateWidget[0].leAngleMin->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
-
-    value = m_stateWidget[0].leAngleMax->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
-
-    value = m_stateWidget[0].leTolerance->text().toDouble(&ok);
-    m_monster.setPwmHoming(0, value);
+    m_monster.setConfig(0, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance);
 }
 
 void MainWindow::setConfigElvSlot() {
     bool ok;
-    qreal value = m_stateWidget[1].lePwmHoming->text().toDouble(&ok);
-    m_monster.setPwmHoming(1, value);
+
+    qreal pwmHoming = m_stateWidget[1].lePwmHoming->text().toDouble(&ok);
+    qreal pwmMin = m_stateWidget[1].lePwmMin->text().toDouble(&ok);
+    qreal pwmMax = m_stateWidget[1].lePwmMax->text().toDouble(&ok);
+    qreal angleMin = qDegreesToRadians(m_stateWidget[1].leAngleMin->text().toDouble(&ok));
+    qreal angleMax = qDegreesToRadians(m_stateWidget[1].leAngleMax->text().toDouble(&ok));
+    qreal tolerance = qDegreesToRadians(m_stateWidget[1].leTolerance->text().toDouble(&ok));
+
+    m_monster.setConfig(1, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance);
 }
 
 void MainWindow::brakeMotionAzmSlot() {
-    m_monster.setMotion(0, 0);
-    m_stateWidget[0].lePwm->setText("0");
+    m_monster.setModeDefault(0);
 }
 
 void MainWindow::brakeMotionElvSlot() {
-    m_monster.setMotion(1, 0);
-    m_stateWidget[1].lePwm->setText("0");
+    m_monster.setModeDefault(1);
 }
 
 void MainWindow::resetErrorAzmSlot() {
@@ -249,7 +247,7 @@ void MainWindow::resetErrorElvSlot() {
     m_monster.resetError(1);
 }
 
-void MainWindow::setController(uint index) {
+void MainWindow::setModePid(uint index) {
     bool ok_kp;
     bool ok_ki;
     bool ok_kd;
@@ -261,7 +259,7 @@ void MainWindow::setController(uint index) {
     if (ok_kp && ok_ki && ok_kd && ok_rate) {
         ki = (ki * rate) / 1000;
         kd = (kd * 1000) / rate;
-        m_monster.setController(index, kp, ki, kd);
+        m_monster.setModePid(index, kp, ki, kd);
     }
 }
 
@@ -270,16 +268,16 @@ void MainWindow::setTarget(uint index) {
     double angle = m_stateWidget[index].leTarget->text().toDouble(&ok);
 
     if (ok) {
-        m_monster.setTargetDegrees(index, angle);
+        m_monster.setTarget(index, qDegreesToRadians(angle));
     }
 }
 
 void MainWindow::setControllerAzmSlot() {
-    setController(0);
+    setModePid(0);
 }
 
 void MainWindow::setControllerElvSlot() {
-    setController(1);
+    setModePid(1);
 }
 
 void MainWindow::setTargetAzmSlot() {
@@ -299,9 +297,13 @@ void MainWindow::setModeHomingElvSlot() {
 }
 
 void MainWindow::setModePidAzmSlot() {
-    m_monster.setModePid(0);
+    setModePid(0);
 }
 
 void MainWindow::setModePidElvSlot() {
-    m_monster.setModePid(1);
+    setModePid(1);
+}
+
+void MainWindow::readSettingsSlot() {
+    m_monster.readSettings("monster.json");
 }

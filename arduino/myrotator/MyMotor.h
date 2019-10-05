@@ -30,8 +30,8 @@ public:
         m_pinPwm = pinPwm;
 
         m_pwm = 0;
-        m_pwmMin = 50;
-        m_pwmMax = 255;
+        m_pwmMin = 0;
+        m_pwmMax = 0;
         m_pwmHoming = 0;
     }
     
@@ -45,47 +45,35 @@ public:
     }
 
     void setMotion(long value) {
-        if (value > 0) {
-            if (value > 255) {
-                m_pwm = 255;
-                this->setMotionRight();
-            }
-            else if (value < 50) {
-                m_pwm = 0;
-                this->brake();
-            }
-            else {
-                m_pwm = value;
-                this->setMotionRight();
-            }
-        }
-        else if (value < 0) {
-            if (value < -255) {
-                m_pwm = 255;
-                this->setMotionLeft();
-            }
-            else if (value > -50) {
-                m_pwm = 0;
-                this->brake();
-            }
-            else {
-                m_pwm = -value;
-                this->setMotionLeft();
-            }
+        if (abs(value) <= (long)m_pwmMin) {
+            m_pwm = 0;
+            brake();
         }
         else {
-            m_pwm = 0;
-            this->brake();
+            m_pwm = (abs(value) > (long)m_pwmMax) ? m_pwmMax : abs(value);
+            if (value > 0) {
+                setMotionRight();
+            }
+            else {
+                setMotionLeft();
+            }
         }
+
         analogWrite(m_pinPwm, m_pwm);
     }
     
     void setPwmMin(uint8_t value) {
-        m_pwmMin = (value < m_pwmMax) ? value : m_pwmMax;
+        m_pwmMin = value;
+        if (m_pwmMin > m_pwmMax) {
+            m_pwmMax = m_pwmMin;
+        }
     }
 
     void setPwmMax(uint8_t value) {
-        m_pwmMax = (value > m_pwmMin) ? value : m_pwmMin;
+        m_pwmMax = value;
+        if (m_pwmMin > m_pwmMax) {
+            m_pwmMin = m_pwmMax;
+        }
     }
 
     void setPwmHoming(int value) {

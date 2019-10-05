@@ -5,6 +5,7 @@
 !*.c
 !*.txt
 !*.pro
+!*.json
 !ui/
 !ui/*.ui
 !arduino/

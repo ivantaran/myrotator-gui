@@ -7,6 +7,7 @@
 
 #include <QtSerialPort>
 #include <QSerialPortInfo>
+#include <QJsonDocument>
 
 #include "Monster.h"
 
@@ -52,8 +53,8 @@ void Monster::readyReadSlot() {
                     m_pwmHoming[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
                     m_pwmMin[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
                     m_pwmMax[i] = (qreal)list.at(position++).toInt(&ok) / 2.55;
-                    m_angleMin[i] = (qreal)list.at(position++).toInt(&ok) / -4096.0 * M_PI;
-                    m_angleMax[i] = (qreal)list.at(position++).toInt(&ok) / -4096.0 * M_PI;
+                    m_angleMin[i] = (qreal)list.at(position++).toInt(&ok) / 4096.0 * M_PI;
+                    m_angleMax[i] = (qreal)list.at(position++).toInt(&ok) / 4096.0 * M_PI;
                     m_tolerance[i] = (qreal)list.at(position++).toInt(&ok) / 4096.0 * M_PI;
                 }
             }
@@ -192,42 +193,33 @@ void Monster::setMotion(uint index, qreal value) {
     write(QString("set %1 motion %2\n").arg(index).arg(pwm).toUtf8());
 }
 
-void Monster::setController(uint index, int kp, int ki, int kd) {
-    write(QString("set %1 kp %2\n").arg(index).arg(kp).toUtf8());
-    write(QString("set %1 ki %2\n").arg(index).arg(ki).toUtf8());
-    write(QString("set %1 kd %2\n").arg(index).arg(kd).toUtf8());
+void Monster::setModePid(uint index, int kp, int ki, int kd) {
+    write(QString("set %1 pid %2,%3,%4\n").arg(index).arg(kp).arg(ki).arg(kd).toUtf8());
 }
 
-void Monster::setTargetLinear(uint index, int angle) {
-    write(QString("set %1 target %2\n").arg(index).arg(angle).toUtf8());
-}
-
-void Monster::setTargetRadians(uint index, qreal angle) {
+void Monster::setTarget(uint index, qreal angle) {
     int value = qRound(-4096.0 * angle / M_PI);
-    setTargetLinear(index, value);
+    write(QString("set %1 target %2\n").arg(index).arg(value).toUtf8());
 }
 
-void Monster::setTargetDegrees(uint index, qreal angle) {
-    int value = qRound(-4096.0 * angle / 180.0);
-    setTargetLinear(index, value);
-}
-
-void Monster::setModePid(uint index) {
-    write(QString("set %1 pid\n").arg(index).toUtf8());
+void Monster::setModeDefault(uint index) {
+    write(QString("set %1 default\n").arg(index).toUtf8());
 }
 
 void Monster::setModeHoming(uint index) {
     write(QString("set %1 homing\n").arg(index).toUtf8());
 }
 
-void Monster::setPwmHoming(uint index, qreal value) {
-    int pwm = qRound(value * 2.55);
-    write(QString("set %1 pwm_homing %2\n").arg(index).arg(pwm).toUtf8());
-}
-
-void Monster::setPwmMin(uint index, qreal value) {
-    int pwm = qRound(value * 2.55);
-    write(QString("set %1 pwm_homing %2\n").arg(index).arg(pwm).toUtf8());
+void Monster::setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance) {
+    int pwmHomingInt = qRound(pwmHoming * 2.55);
+    int pwmMinInt = qRound(pwmMin * 2.55);
+    int pwmMaxInt = qRound(pwmMax * 2.55);
+    int angleMinInt = qRound(4096.0 * angleMin / M_PI);
+    int angleMaxInt = qRound(4096.0 * angleMax / M_PI);
+    int toleranceInt = qRound(4096.0 * tolerance / M_PI);
+    write(QString("set %1 config %2,%3,%4,%5,%6,%7\n").arg(index)
+        .arg(pwmHomingInt).arg(pwmMinInt).arg(pwmMaxInt).arg(angleMinInt)
+        .arg(angleMaxInt).arg(toleranceInt).toUtf8());
 }
 
 void Monster::resetError(uint index) {
@@ -236,4 +228,41 @@ void Monster::resetError(uint index) {
 
 void Monster::requestConfigSlot() {
     write(QString("get config\n").toUtf8());
+}
+
+void Monster::readConfig(uint index, const QJsonObject &jsonObject) {
+    QJsonValue value;
+    
+    value = jsonObject.value(QString("pwmHoming"));
+    qreal pwmHoming = value.toDouble(0.0);
+    value = jsonObject.value(QString("pwmMin"));
+    qreal pwmMin = value.toDouble(0.0);
+    value = jsonObject.value(QString("pwmMax"));
+    qreal pwmMax = value.toDouble(0.0);
+    value = jsonObject.value(QString("angleMin"));
+    qreal angleMin = qDegreesToRadians(value.toDouble(0.0));
+    value = jsonObject.value(QString("angleMax"));
+    qreal angleMax = qDegreesToRadians(value.toDouble(0.0));
+    value = jsonObject.value(QString("tolerance"));
+    qreal tolerance = qDegreesToRadians(value.toDouble(0.0));
+
+    setConfig(index, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance);
+}
+
+void Monster::readSettings(const QString &fileName) {
+    QString text;
+    QJsonValue value;
+
+    QFile file(fileName);
+    file.open(QFile::ReadOnly | QFile::Text);
+    text = file.readAll();
+    file.close();
+
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(text.toUtf8());
+    QJsonObject jsonObject = jsonDoc.object();
+    
+    value = jsonObject.value("azm");
+    readConfig(0, value.toObject());
+    value = jsonObject.value("elv");
+    readConfig(1, value.toObject());
 }
