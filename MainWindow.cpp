@@ -67,6 +67,8 @@ MainWindow::MainWindow() {
     connect(m_stateWidget[1].leAngleMax, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
     connect(m_stateWidget[1].leTolerance, SIGNAL(editingFinished()), this, SLOT(setConfigElvSlot()));
 
+    connect(m_widget.editTerminal, SIGNAL(editingFinished()), this, SLOT(sendStringSlot()));
+
     connect(&m_monster, SIGNAL(updatedState(const QString &)), this, SLOT(updatedStateSlot(const QString &)));
 
 }
@@ -127,6 +129,7 @@ void MainWindow::updateGuiSlot() {
 
 void MainWindow::updatedStateSlot(const QString &line) {
     m_labelState.setText(line);
+    m_widget.textTerminal->appendPlainText(line);
 
     for (uint i = 0; i < 2; i++) {
         m_stateWidget[i].labelModeValue->setText(m_monster.getModeString(i));
@@ -306,4 +309,8 @@ void MainWindow::setModePidElvSlot() {
 
 void MainWindow::readSettingsSlot() {
     m_monster.readSettings("monster.json");
+}
+
+void MainWindow::sendStringSlot() {
+    m_monster.write((m_widget.editTerminal->text() + '\n').toUtf8());
 }

@@ -75,8 +75,8 @@ public:
         m_kd = value;
     }
     
-    void setTarget(long value) {
-        m_target = value;
+    void setTargetDegrees(float value) {
+        m_target = (long)(-4096.0f * value / 180.0f);
     }
 
     void setTolerance(long value) {

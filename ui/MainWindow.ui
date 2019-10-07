@@ -181,6 +181,14 @@
        <attribute name="title">
         <string>Page</string>
        </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPlainTextEdit" name="textTerminal"/>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="editTerminal"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>

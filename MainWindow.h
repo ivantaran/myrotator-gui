@@ -53,6 +53,7 @@ private slots:
     void setConfigAzmSlot();
     void setConfigElvSlot();
     void readSettingsSlot();
+    void sendStringSlot();
 };
 
 #endif /* MAINWINDOW_H_ */

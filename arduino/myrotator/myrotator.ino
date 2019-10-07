@@ -1,6 +1,7 @@
 
 #include "Controller.h"
 
+#define MAXN_COMMANDS 64
 
 static MyMotor motor[2] = {
     MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1), 
@@ -40,208 +41,135 @@ void setup() {
 }
 
 void timerEvent() {
-    Serial.print("state:");
-    
-    for (uint8_t i = 0; i < 2; i++) {
-        Serial.print(static_cast<uint8_t>(controller[i].getMode()));
-        Serial.print(",");
-        Serial.print(static_cast<uint8_t>(controller[i].getError()));
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getCurrentSensorValue());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getEnDiagValue());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getPwm());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getInaValue());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getInbValue());
-        Serial.print(",");
-        Serial.print(controller[i].getSensor()->getAngle());
-        Serial.print(",");
-        Serial.print(controller[i].getEndstop()->isEnd());
-        Serial.print(",");
-    }
-
-    Serial.println();
-
     controller[0].execute();
     controller[1].execute();
 }
 
 typedef enum {
-    CommandGet, 
-    CommandSet, 
-    CommandMotion, 
-    CommandDefault,  
-    CommandPid, 
-    CommandHoming, 
-    CommandTarget, 
-    CommandResetError,
-    CommandConfig
+    CommandAz,
+    CommandEl,
+    CommandUp,
+    CommandDn,
+    CommandDm,
+    CommandUm,
+    CommandDr,
+    CommandUr,
+    CommandMl,
+    CommandMr,
+    CommandMu,
+    CommandMd,
+    CommandSa,
+    CommandSe,
+    CommandAo,
+    CommandLo,
+    CommandOp,
+    CommandIp,
+    CommandAn,
+    CommandSt,
+    CommandVe,
 } command_e;
 
-const char* command_table[] {
-    "get"     ,
-    "set"     ,
-    "motion"  ,
-    "default" ,
-    "pid"     ,
-    "homing"  ,
-    "target"  ,
-    "reseterr",
-    "config"  ,
+static const char* command_table[] {
+    "AZ",   // Azimuth             number - 1 decimal place [deg]
+    "EL",   // Elevation           number - 1 decimal place [deg]
+    "UP",   // Uplink freq         in Hertz
+    "DN",   // Downlink freq		in Hertz
+    "DM",   // Downlink Mode       ascii, eg SSB, FM
+    "UM",   // Uplink Mode         ascii, eg SSB, FM
+    "DR",   // Downlink Radio      number
+    "UR",   // Uplink Radio        number
+    "ML",   // Move Left
+    "MR",   // Move Right
+    "MU",   // Move Up
+    "MD",   // Move Down
+    "SA",   // Stop azimuth moving
+    "SE",   // Stop elevation moving
+    "AO",   // AOS
+    "LO",   // LOS
+    "OP",   // Set output          number
+    "IP",   // Read an input       number
+    "AN",   // Read analogue input number
+    "ST",   // Set time            YY:MM:DD:HH:MM:SS
+    "VE",   // Request Version
+
+    "VL",   // Velocity Left	    number [mdeg/s]
+    "VR",   // Velocity Right	    number [mdeg/s]
+    "VU",   // Velocity Up	    number [mdeg/s]
+    "VD",   // Velocity Down	    number [mdeg/s]
+    "CR",   // Read config         register [0-x]	1
+    "CW",   // Write config        register [0-x]	2
+    "GS",   // Get status register			3
+    "GE",   // Get error register			4
+
+    "VE",   // Request Version				5
+    "IP",   // Read an input       number		6
+    "OP",   // Set output          number		7
+    "AN",   // Read analogue input number		8
+
 };
 
-void sendConfig() {
-    Serial.print(command_table[CommandConfig]);
-    Serial.print(':');
-    for (uint8_t i = 0; i < 2; i++) {
-        Serial.print(controller[i].getMotor()->getPwmHoming());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getPwmMin());
-        Serial.print(",");
-        Serial.print(controller[i].getMotor()->getPwmMax());
-        Serial.print(",");
-        Serial.print(controller[i].getAngleMin());
-        Serial.print(",");
-        Serial.print(controller[i].getAngleMax());
-        Serial.print(",");
-        Serial.print(controller[i].getTolerance());
-        Serial.print(",");
-    }
-    Serial.println();
-}
+void set_parameter(size_t addr, const char *str) {
+    float value;
 
-void acceptConfig(size_t addr, char *string){
-    int value;
-    uint8_t i;
-    for (i = 0 ; i < 6; i++) {
-        value = atoi(string);
-        switch (i) {
-        case 0:
-            controller[addr].getMotor()->setPwmHoming(value);
-            break;
-        case 1:
-            controller[addr].getMotor()->setPwmMin(value);
-            break;
-        case 2:
-            controller[addr].getMotor()->setPwmMax(value);
-            break;
-        case 3:
-            controller[addr].setAngleMin(value);
-            break;
-        case 4:
-            controller[addr].setAngleMax(value);
-            break;
-        case 5:
-            controller[addr].setTolerance(value);
-            break;
-        default:
-            break;
-        }
-        string = strtok(NULL, delimeters);
-        if (string == NULL) {
-            return;
-        }
+    switch (addr) {
+    case CommandAz:
+        value = atof(str);
+        controller[0].setTargetDegrees(value);
+        Serial.println(command_table[addr]);
+        break;
+    case CommandEl:
+        value = atof(str);
+        controller[1].setTargetDegrees(value);
+        Serial.println(command_table[addr]);
+        break;
+    default:
+        break;
     }
 }
 
-void acceptPid(size_t addr, char *string){
-    int value;
-    uint8_t i;
-    for (i = 0 ; i < 3; i++) {
-        value = atoi(string);
-        switch (i) {
-        case 0:
-            controller[addr].setKp(value);
-            break;
-        case 1:
-            controller[addr].setKi(value);
-            break;
-        case 2:
-            controller[addr].setKd(value);
-            break;
-        default:
-            break;
-        }
-        string = strtok(NULL, delimeters);
-        if (string == NULL) {
-            return;
-        }
+void send_parameter(size_t addr) {
+    switch (addr) {
+    case CommandAz:
+        Serial.print(command_table[addr]);
+        Serial.print((float)controller[0].getSensor()->getAngleDegrees(), 1);
+        Serial.print(' ');
+        break;
+    case CommandEl:
+        Serial.print(command_table[addr]);
+        Serial.print((float)controller[1].getSensor()->getAngleDegrees(), 1);
+        Serial.print(' ');
+        break;
+    default:
+        break;
     }
 }
 
 void acceptCommand(char *buffer) {
-    size_t addr;
-    int value;
-    char *string = buffer;
-
-    string = strtok(string, delimeters);
-    if (string == NULL) {
-        return;
+    size_t i;
+    int n, sendnum;
+    char *str;
+    sendnum = 0;
+    n = MAXN_COMMANDS;
+    str = strtok(buffer, " ");
+        
+    while (n-- && str) {
+        for (i = 0; i < sizeof(command_table) / sizeof(command_table[0]); i++) {
+            if (strncmp(command_table[i], str, 2) == 0) {
+                if (str[2] != '\0' && str[2] != ' ') {
+                    set_parameter(i, str + 2);
+                }
+                else {
+                    send_parameter(i);
+                    sendnum++;
+                }
+                break;
+            }
+        }
+        str = strtok(NULL, " ");
     }
 
-    if (strstr(string, command_table[CommandSet]) != NULL) {
-        string = strtok(NULL, delimeters);
-
-        if (string == NULL) {
-            return;
-        }
-        else if (string[0] == '0') {
-            addr = 0;
-        }
-        else if (string[0] == '1') {
-            addr = 1;
-        }
-        else {
-            return;
-        }
-
-        string = strtok(NULL, delimeters);
-        if (string == NULL) {
-            return;
-        }
-        else if (strstr(string, command_table[CommandConfig]) != NULL) {
-            string = strtok(NULL, delimeters);
-            if (string != NULL) {
-                acceptConfig(addr, string);
-            }
-            sendConfig();
-        }
-        else if (strstr(string, command_table[CommandDefault]) != NULL) {
-            controller[addr].setMode(Controller::ModeDefault);
-        }
-        else if (strstr(string, command_table[CommandPid]) != NULL) {
-            string = strtok(NULL, delimeters);
-            if (string != NULL) {
-                acceptPid(addr, string);
-                controller[addr].setMode(Controller::ModePid);
-            }
-        }
-        else if (strstr(string, command_table[CommandHoming]) != NULL) {
-            controller[addr].setMode(Controller::ModeHoming);
-        }
-        else if (strstr(string, command_table[CommandTarget]) != NULL) {
-            string = strtok(NULL, delimeters);
-            if (string != NULL) {
-                value = atoi(string);
-                controller[addr].setTarget(value);
-            }
-        }
-        else if (strstr(string, command_table[CommandMotion]) != NULL) {
-            string = strtok(NULL, delimeters);
-            if (string != NULL) {
-                value = atoi(string);
-                controller[addr].getMotor()->setMotion(value);
-            }
-        }
-        else if (strstr(string, command_table[CommandResetError]) != NULL) {
-            controller[addr].resetError();
-        }
-    }
-    else if (strstr(string, command_table[CommandGet]) != NULL) {
-        sendConfig();
+    if (sendnum > 0) {
+        Serial.println();
     }
 }
 
@@ -251,7 +179,6 @@ void acceptSerial() {
     
     if (Serial.available() > 0) {
         buffer[pointer] = (char)Serial.read();
-
         if (buffer[pointer] == '\n') {
             buffer[pointer] = '\0';
             acceptCommand(buffer);
@@ -271,6 +198,6 @@ void loop() {
         t0 += TIMER_PERIOD;
         timerEvent();
     }
-    
+
     acceptSerial();
 }

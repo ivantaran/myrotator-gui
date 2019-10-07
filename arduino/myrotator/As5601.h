@@ -60,6 +60,10 @@ public:
         return m_angle;
     }
 
+    float getAngleDegrees(bool *ok = nullptr) {
+        return (float)getAngle(ok) * 180.0f / -4096.0f;
+    }
+
     inline bool isValid() {
         return m_isValid;
     }
