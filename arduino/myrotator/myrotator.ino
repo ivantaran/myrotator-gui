@@ -40,7 +40,7 @@ void setup() {
     digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void timerEvent() {
+void timer_event() {
     controller[0].execute();
     controller[1].execute();
 }
@@ -62,11 +62,27 @@ typedef enum {
     CommandSe,
     CommandAo,
     CommandLo,
-    CommandOp,
-    CommandIp,
-    CommandAn,
     CommandSt,
+    
+    CommandVl,
+    CommandVr,
+    CommandVu,
+    CommandVd,
+    CommandCr,
+    CommandCw,
+    CommandGs,
+    CommandGe,
+
     CommandVe,
+    CommandIp,
+    CommandOp,
+    CommandAn,
+
+    CommandAr,
+    CommandEr,
+    CommandAw,
+    CommandEw,
+    CommandAl,
 } command_e;
 
 static const char* command_table[] {
@@ -86,11 +102,7 @@ static const char* command_table[] {
     "SE",   // Stop elevation moving
     "AO",   // AOS
     "LO",   // LOS
-    "OP",   // Set output          number
-    "IP",   // Read an input       number
-    "AN",   // Read analogue input number
     "ST",   // Set time            YY:MM:DD:HH:MM:SS
-    "VE",   // Request Version
 
     "VL",   // Velocity Left	    number [mdeg/s]
     "VR",   // Velocity Right	    number [mdeg/s]
@@ -105,49 +117,172 @@ static const char* command_table[] {
     "IP",   // Read an input       number		6
     "OP",   // Set output          number		7
     "AN",   // Read analogue input number		8
-
+    "AR",
+    "ER",
+    "AW",
+    "EW",
+    "AL",
 };
 
-void set_parameter(size_t addr, const char *str) {
+int accept_command_xr(Controller *c, const char *str) {
+    int sendnum;
+    
+    sendnum = 0;
+
+    if (str[2] != '\0') {
+        Serial.write(str, 3);
+        Serial.print(',');
+
+        switch (str[2]) {
+        case '0':
+            Serial.print(c->getMotor()->getPwmHoming());
+            break;
+        case '1':
+            Serial.print(c->getMotor()->getPwmMin());
+            break;
+        case '2':
+            Serial.print(c->getMotor()->getPwmMax());
+            break;
+        case '3':
+            Serial.print(c->getAngleMin());
+            break;
+        case '4':
+            Serial.print(c->getAngleMax());
+            break;
+        case '5':
+            Serial.print(c->getTolerance());
+            break;
+        case '6':
+            Serial.print(c->getKp());
+            break;
+        case '7':
+            Serial.print(c->getKi());
+            break;
+        case '8':
+            Serial.print(c->getKd());
+            break;
+        default:
+            Serial.print('0');
+            break;
+        }
+
+        Serial.print(' ');
+        sendnum++;
+    }
+
+    return sendnum;
+}
+
+void accept_command_xw(Controller *c, const char *str) {
+    int vi;
+    long vl;
+
+    if (str[2] != '\0' && str[3] != '\0' && str[3] == ',') {
+        switch (str[2]) {
+        case '0':
+            vi = atoi(str + 4);
+            c->getMotor()->setPwmHoming(vi);
+            break;
+        case '1':
+            vi = atoi(str + 4);
+            c->getMotor()->setPwmMin((uint8_t)vi);
+            break;
+        case '2':
+            vi = atoi(str + 4);
+            c->getMotor()->setPwmMax((uint8_t)vi);
+            break;
+        case '3':
+            vl = atol(str + 4);
+            c->setAngleMin(vl);
+            break;
+        case '4':
+            vl = atol(str + 4);
+            c->setAngleMax(vl);
+            break;
+        case '5':
+            vl = atol(str + 4);
+            c->setTolerance(vl);
+            break;
+        case '6':
+            vl = atol(str + 4);
+            c->setKp(vl);
+            break;
+        case '7':
+            vl = atol(str + 4);
+            c->setKi(vl);
+            break;
+        case '8':
+            vl = atol(str + 4);
+            c->setKd(vl);
+            break;
+        }
+    }
+}
+
+int accept_parameters(size_t addr, const char *str) {
     float value;
+    int sendnum;
+    
+    sendnum = 0;
 
     switch (addr) {
     case CommandAz:
-        value = atof(str);
-        controller[0].setTargetDegrees(value);
-        Serial.println(command_table[addr]);
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            Serial.print((float)controller[0].getSensor()->getAngleDegrees(), 1);
+            Serial.print(' ');
+            sendnum++;
+        }
+        else {
+            value = atof(str + 2);
+            controller[0].setTargetDegrees(value);
+        }
         break;
     case CommandEl:
-        value = atof(str);
-        controller[1].setTargetDegrees(value);
-        Serial.println(command_table[addr]);
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            Serial.print((float)controller[1].getSensor()->getAngleDegrees(), 1);
+            Serial.print(' ');
+            sendnum++;
+        }
+        else {
+            value = atof(str + 2);
+            controller[1].setTargetDegrees(value);
+        }
+        break;
+    case CommandAr:
+        sendnum += accept_command_xr(&controller[0], str);
+        break;
+    case CommandEr:
+        sendnum += accept_command_xr(&controller[1], str);
+        break;
+    case CommandAw:
+        accept_command_xw(&controller[0], str);
+        break;
+    case CommandEw:
+        accept_command_xw(&controller[1], str);
+        break;
+    case CommandVe:
+        Serial.print("myrotator");
+        sendnum++;
         break;
     default:
+        Serial.print("ALcommand[");
+        Serial.print(addr);
+        Serial.print("] skipped: ");
+        Serial.println(str);
+        sendnum++;
         break;
     }
+    
+    return sendnum;
 }
 
-void send_parameter(size_t addr) {
-    switch (addr) {
-    case CommandAz:
-        Serial.print(command_table[addr]);
-        Serial.print((float)controller[0].getSensor()->getAngleDegrees(), 1);
-        Serial.print(' ');
-        break;
-    case CommandEl:
-        Serial.print(command_table[addr]);
-        Serial.print((float)controller[1].getSensor()->getAngleDegrees(), 1);
-        Serial.print(' ');
-        break;
-    default:
-        break;
-    }
-}
-
-void acceptCommand(char *buffer) {
+void accept_command(char *buffer) {
     size_t i;
     int n, sendnum;
     char *str;
+    
     sendnum = 0;
     n = MAXN_COMMANDS;
     str = strtok(buffer, " ");
@@ -155,25 +290,19 @@ void acceptCommand(char *buffer) {
     while (n-- && str) {
         for (i = 0; i < sizeof(command_table) / sizeof(command_table[0]); i++) {
             if (strncmp(command_table[i], str, 2) == 0) {
-                if (str[2] != '\0' && str[2] != ' ') {
-                    set_parameter(i, str + 2);
-                }
-                else {
-                    send_parameter(i);
-                    sendnum++;
-                }
+                    sendnum += accept_parameters(i, str);
                 break;
             }
         }
         str = strtok(NULL, " ");
     }
-
+    
     if (sendnum > 0) {
         Serial.println();
     }
 }
 
-void acceptSerial() {
+void accept_serial() {
     static char buffer[64];
     static unsigned char pointer = 0;
     
@@ -181,7 +310,7 @@ void acceptSerial() {
         buffer[pointer] = (char)Serial.read();
         if (buffer[pointer] == '\n') {
             buffer[pointer] = '\0';
-            acceptCommand(buffer);
+            accept_command(buffer);
             pointer = 0;
         }
         else if (pointer < sizeof(buffer) - 1) {
@@ -196,8 +325,8 @@ void acceptSerial() {
 void loop() {
     if (millis() - t0 >= TIMER_PERIOD) {
         t0 += TIMER_PERIOD;
-        timerEvent();
+        timer_event();
     }
 
-    acceptSerial();
+    accept_serial();
 }
