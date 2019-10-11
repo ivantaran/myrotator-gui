@@ -6,6 +6,7 @@
         "angleMin": 0.0,
         "angleMax": 360.0,
         "tolerance": 0.5, 
+        "rate": 100,
         "kp": 400, 
         "ki": 150, 
         "kd": 5
@@ -17,6 +18,7 @@
         "angleMin": 0.0,
         "angleMax": 180.0,
         "tolerance": 0.5,
+        "rate": 100,
         "kp": 400, 
         "ki": 150, 
         "kd": 5

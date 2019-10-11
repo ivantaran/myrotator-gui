@@ -22,7 +22,7 @@ public:
     uint getDiag(uint index);
     uint getDirection(uint index);
     const QString getDirectionString(uint index);
-    const QString getModeString(uint index);
+    const QString getStatusString(uint index);
     const QString getErrorString(uint index);
     qreal getAngle(uint index);
     bool isEndstop(uint index);
@@ -39,27 +39,45 @@ public:
     void setModeDefault(uint index);
     void setModePid(uint index, int kp, int ki, int kd);
     void setModeHoming(uint index);
-    void setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance);
-    void resetError(uint index);
-    void readSettings(const QString &fileName);
 
+    void setPwmHoming(uint index, qreal value);
+    void setPwmMin(uint index, qreal value);
+    void setPwmMax(uint index, qreal value);
+    void setAngleMin(uint index, qreal value);
+    void setAngleMax(uint index, qreal value);
+    void setTolerance(uint index, qreal value);
+    void setKp(uint index, int value);
+    void setKi(uint index, int value);
+    void setKd(uint index, int value);
+
+    void clearError(uint index);
+    void readSettings(const QString &fileName);
+    void setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance, 
+            int rate, int kp, int ki, int kd);
 private:
     typedef enum {
-        ModeDefault = 0,
-        ModePid = 1,
-        ModeHoming = 2,
-        ModeSpeed = 3
-    } ControllerMode;
+        StatusUnknown = 0x00,
+        StatusIdle = 0x01,
+        StatusMoving = 0x02,
+        StatusPointing = 0x04,
+        StatusError = 0x08, 
+        StatusHoming = 0x10,
+        StatusUnhoming = 0x20,
+    } ControllerStatus;
     
     typedef enum {
-        ErrorOk = 0, 
-        ErrorSensor = 1, 
-        ErrorHoming = 2, 
+        ErrorOk = 0x00, 
+        ErrorSensor = 0x01, 
+        ErrorJam = 0x02, 
+        ErrorHoming = 0x04, 
     } ControllerError;
 
+    int m_timerSlowId;
+    int m_timerFastId;
+
     QString m_stateLine;
-    ControllerMode m_mode[2] = { ModeDefault, ModeDefault };
-    ControllerError m_error[2] = { ErrorOk, ErrorOk };
+    int m_status[2] = { StatusUnknown, StatusUnknown };
+    int m_error[2] = { ErrorOk, ErrorOk };
     qreal m_pwm[2] = { 0.0, 0.0 };
     uint m_currentSensor[2] = { 0, 0 };
     uint m_diag[2] = { 0, 0 };
@@ -75,6 +93,11 @@ private:
     qreal m_tolerance[2] = { 0.0, 0.0 };
     
     void readConfig(uint index, const QJsonObject &jsonObject);
+    void acceptConfigRegister(uint index, uint addr, int value);
+    void requestPosition();
+    
+protected:
+    void timerEvent(QTimerEvent *event);
 
 private slots:
     void readyReadSlot();

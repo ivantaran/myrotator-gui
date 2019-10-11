@@ -82,6 +82,8 @@ typedef enum {
     CommandEr,
     CommandAw,
     CommandEw,
+    CommandAc,
+    CommandEc,
     CommandAl,
 } command_e;
 
@@ -100,8 +102,8 @@ static const char* command_table[] {
     "MD",   // Move Down
     "SA",   // Stop azimuth moving
     "SE",   // Stop elevation moving
-    "AO",   // AOS
-    "LO",   // LOS
+    "AO",   // AOS Acquisition of Signal (or Satellite). AOS is the time that a satellite rises above the horizon of an observer.
+    "LO",   // LOS stands for Loss of Signal (or Satellite). LOS is the time that a satellite passes below the observer’s horizon.
     "ST",   // Set time            YY:MM:DD:HH:MM:SS
 
     "VL",   // Velocity Left	    number [mdeg/s]
@@ -117,11 +119,14 @@ static const char* command_table[] {
     "IP",   // Read an input       number		6
     "OP",   // Set output          number		7
     "AN",   // Read analogue input number		8
-    "AR",
-    "ER",
-    "AW",
-    "EW",
-    "AL",
+    
+    "AR",   // Read azimuth config
+    "ER",   // Read elevation config
+    "AW",   // Write azimuth config
+    "EW",   // Write elevation config
+    "AC",   // Clear azimuth error 
+    "EC",   // Clear elevation error
+    "AL",   // Alarm message
 };
 
 int accept_command_xr(Controller *c, const char *str) {
@@ -223,6 +228,11 @@ int accept_parameters(size_t addr, const char *str) {
     float value;
     int sendnum;
     
+    union {
+        uint8_t u8[2];
+        uint16_t u16;
+    } union16;
+
     sendnum = 0;
 
     switch (addr) {
@@ -250,6 +260,24 @@ int accept_parameters(size_t addr, const char *str) {
             controller[1].setTargetDegrees(value);
         }
         break;
+    case CommandMl:
+        controller[0].moveNegative();
+        break;
+    case CommandMr:
+        controller[0].movePositive();
+        break;
+    case CommandMu:
+        controller[1].movePositive();
+        break;
+    case CommandMd:
+        controller[1].moveNegative();
+        break;
+    case CommandSa:
+        controller[0].setStatus(Controller::StatusIdle);
+        break;
+    case CommandSe:
+        controller[1].setStatus(Controller::StatusIdle);
+        break;
     case CommandAr:
         sendnum += accept_command_xr(&controller[0], str);
         break;
@@ -262,16 +290,38 @@ int accept_parameters(size_t addr, const char *str) {
     case CommandEw:
         accept_command_xw(&controller[1], str);
         break;
+    case CommandAc:
+        controller[0].clearError();
+        break;
+    case CommandEc:
+        controller[1].clearError();
+        break;
     case CommandVe:
         Serial.print("myrotator");
         sendnum++;
         break;
-    default:
-        Serial.print("ALcommand[");
-        Serial.print(addr);
-        Serial.print("] skipped: ");
-        Serial.println(str);
+    case CommandGs:
+        union16.u8[0] = controller[0].getStatus();
+        union16.u8[1] = controller[1].getStatus();
+        Serial.print(command_table[addr]);
+        Serial.print(union16.u16);
+        Serial.print(' ');
         sendnum++;
+        break;
+    case CommandGe:
+        union16.u8[0] = controller[0].getError();
+        union16.u8[1] = controller[1].getError();
+        Serial.print(command_table[addr]);
+        Serial.print(union16.u16);
+        Serial.print(' ');
+        sendnum++;
+        break;
+    default:
+        // Serial.print("ALcommand[");
+        // Serial.print(addr);
+        // Serial.print("] skipped: ");
+        // Serial.println(str);
+        // sendnum++;
         break;
     }
     
@@ -303,12 +353,12 @@ void accept_command(char *buffer) {
 }
 
 void accept_serial() {
-    static char buffer[64];
+    static char buffer[256];
     static unsigned char pointer = 0;
     
     if (Serial.available() > 0) {
         buffer[pointer] = (char)Serial.read();
-        if (buffer[pointer] == '\n') {
+        if (buffer[pointer] == '\r' || buffer[pointer] == '\n') {
             buffer[pointer] = '\0';
             accept_command(buffer);
             pointer = 0;

@@ -9,16 +9,21 @@ class Controller {
 
 public:
     typedef enum {
-        ModeDefault = 0,
-        ModePid = 1,
-        ModeHoming = 2,
-        ModeAngleSpeed = 3
-    } ControllerMode;
+        StatusUnknown = 0x00,
+        StatusIdle = 0x01,
+        StatusMoving = 0x02,
+        StatusPointing = 0x04,
+        StatusError = 0x08, 
+        StatusHoming = 0x10,
+        StatusUnhoming = 0x20,
+    } ControllerStatus;
     
     typedef enum {
-        ErrorOk = 0, 
-        ErrorSensor = 1, 
-        ErrorHoming = 2, 
+        ErrorOk = 0x00, 
+        ErrorSensor = 0x01, 
+        ErrorJam = 0x02, 
+        ErrorHoming = 0x04, 
+        ErrorUnhoming = 0x08, 
     } ControllerError;
 
     Controller(MyMotor *motor, Endstop *endstop, As5601 *sensor) {
@@ -29,11 +34,12 @@ public:
         m_tolerance = 0;
         m_angleMin = 0;
         m_angleMax = 0;
-        m_mode = ModeDefault;
+        m_status = StatusIdle;
         m_error = ErrorOk;
         m_motor = motor;
         m_endstop = endstop;
         m_sensor = sensor;
+        m_homingSuccess = false;
 
         resetPid();
     }
@@ -48,19 +54,30 @@ public:
         m_sensor->begin();
     }
 
-    void setMode(const ControllerMode &mode) {
-        if (mode == ModeDefault || m_error == ErrorOk) {
-            m_mode = mode;
-
-            switch (m_mode) {
-            case ModeHoming:
-                m_sensor->resetOffset();
-                break;
-            default:
-                break;
+    void setStatus(const ControllerStatus &status) {
+        if (m_status != status) {
+            if (m_error != ErrorOk) {
+                Serial.println("ALclear_error");
             }
+            else {
+                if (m_homingSuccess || (status == StatusHoming)) {
+                    m_status = status;
+                }
+                else {
+                    m_status = StatusUnhoming;
+                }
+
+                switch (m_status) {
+                case StatusUnhoming:
+                    m_homingSuccess = false;
+                    m_sensor->resetOffset();
+                    break;
+                default:
+                    break;
+                }
+            }
+            resetPid();
         }
-        resetPid();
     }
 
     void setKp(long value) {
@@ -76,6 +93,9 @@ public:
     }
     
     void setTargetDegrees(float value) {
+        if (m_status != StatusPointing) {
+            setStatus(StatusPointing);
+        }
         m_target = (long)(-4096.0f * value / 180.0f);
     }
 
@@ -91,12 +111,12 @@ public:
         m_angleMax = value;
     }
 
-    void resetError() {
+    void clearError() {
         m_error = ErrorOk;
     }
 
-    inline const ControllerMode &getMode() {
-        return m_mode;
+    inline const ControllerStatus &getStatus() {
+        return m_status;
     }
     
     inline long getKp() {
@@ -123,7 +143,7 @@ public:
         return m_angleMax;
     }
 
-    inline const ControllerError &getError() {
+    inline uint8_t getError() {
         return m_error;
     }
 
@@ -134,22 +154,33 @@ public:
             setError(ErrorSensor);
         }
 
-        switch (m_mode) {
-        case ModePid:
+        switch (m_status) {
+        case StatusPointing:
             pid();
             break;
-        case ModeHoming:
+        case StatusHoming:
             homing();
             break;
-        case ModeAngleSpeed:
+        case StatusUnhoming:
+            unhoming();
             break;
-        case ModeDefault:
+        case StatusMoving:
+            break;
         default:
             break;
-
         }
     }
     
+    void movePositive() {
+        m_motor->setMotion(abs(m_motor->getPwmHoming()));
+        setStatus(StatusMoving);
+    }
+
+    void moveNegative() {
+        m_motor->setMotion(-abs(m_motor->getPwmHoming()));
+        setStatus(StatusMoving);
+    }
+
     MyMotor *getMotor() {
         return m_motor;
     }
@@ -167,8 +198,8 @@ private:
     As5601 *m_sensor;
     Endstop *m_endstop;
 
-    ControllerMode m_mode;
-    ControllerError m_error;
+    ControllerStatus m_status;
+    uint8_t m_error;
 
     long m_kp;
     long m_ki;
@@ -181,6 +212,8 @@ private:
     long m_pidValue;
     long m_angleMin;
     long m_angleMax;
+    bool m_homingSuccess;
+    bool m_unhomingSuccess;
 
     void pid() {
         m_deviation[2] = m_deviation[1];
@@ -220,23 +253,42 @@ private:
     }
 
     void homing() {
-        if (abs(m_sensor->getAngle()) > m_angleMax) {
-            setError(ErrorHoming);
+        if (m_homingSuccess) {
+            setStatus(StatusIdle);
         }
         else {
-            if (m_endstop->isEnd()) {
-                setMode(ModeDefault);
-                m_sensor->setZero();
+            if (abs(m_sensor->getAngle()) > m_angleMax) {
+                setError(ErrorHoming);
+            }
+            else {
+                if (m_endstop->isEnd()) {
+                    m_sensor->setZero();
+                    m_homingSuccess = true;
+                    setStatus(StatusIdle);
+                } else {
+                    m_motor->setMotion(m_motor->getPwmHoming());
+                }
+            }
+        }
+    }
+
+    void unhoming() {
+        if (abs(m_sensor->getAngle()) > m_angleMax) {
+            setError(ErrorUnhoming);
+        }
+        else {
+            if (!m_endstop->isEnd()) {
+                setStatus(StatusHoming);
             } else {
-                m_motor->setMotion(m_motor->getPwmHoming());
+                m_motor->setMotion(-m_motor->getPwmHoming());
             }
         }
     }
 
     void setError(const ControllerError &error) {
-        m_error = error;
+        m_error |= error;
         
-        switch (m_error) {
+        switch (error) {
         case ErrorHoming:
             m_sensor->resetOffset();
             break;
@@ -245,7 +297,7 @@ private:
         }
 
         if (m_error != ErrorOk) {
-            setMode(ModeDefault);
+            setStatus(StatusError);
         }
     }
 

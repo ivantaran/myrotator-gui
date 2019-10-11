@@ -132,7 +132,7 @@ void MainWindow::updatedStateSlot(const QString &line) {
     m_widget.textTerminal->appendPlainText(line);
 
     for (uint i = 0; i < 2; i++) {
-        m_stateWidget[i].labelModeValue->setText(m_monster.getModeString(i));
+        m_stateWidget[i].labelModeValue->setText(m_monster.getStatusString(i));
         m_stateWidget[i].labelErrorValue->setText(m_monster.getErrorString(i));
 
         m_stateWidget[i].labelCurrentValue->setText(
@@ -218,7 +218,12 @@ void MainWindow::setConfigAzmSlot() {
     qreal angleMax = qDegreesToRadians(m_stateWidget[0].leAngleMax->text().toDouble(&ok));
     qreal tolerance = qDegreesToRadians(m_stateWidget[0].leTolerance->text().toDouble(&ok));
 
-    m_monster.setConfig(0, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance);
+    int rate = m_stateWidget[0].leRateMs->text().toInt(&ok);
+    int kp = m_stateWidget[0].leKp->text().toInt(&ok);
+    int ki = m_stateWidget[0].leKi->text().toInt(&ok);
+    int kd = m_stateWidget[0].leKd->text().toInt(&ok);
+
+    m_monster.setConfig(0, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance, rate, kp, ki, kd);
 }
 
 void MainWindow::setConfigElvSlot() {
@@ -231,7 +236,12 @@ void MainWindow::setConfigElvSlot() {
     qreal angleMax = qDegreesToRadians(m_stateWidget[1].leAngleMax->text().toDouble(&ok));
     qreal tolerance = qDegreesToRadians(m_stateWidget[1].leTolerance->text().toDouble(&ok));
 
-    m_monster.setConfig(1, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance);
+    int rate = m_stateWidget[1].leRateMs->text().toInt(&ok);
+    int kp = m_stateWidget[1].leKp->text().toInt(&ok);
+    int ki = m_stateWidget[1].leKi->text().toInt(&ok);
+    int kd = m_stateWidget[1].leKd->text().toInt(&ok);
+
+    m_monster.setConfig(1, pwmHoming, pwmMin, pwmMax, angleMin, angleMax, tolerance, rate, kp, ki, kd);
 }
 
 void MainWindow::brakeMotionAzmSlot() {
@@ -243,11 +253,11 @@ void MainWindow::brakeMotionElvSlot() {
 }
 
 void MainWindow::resetErrorAzmSlot() {
-    m_monster.resetError(0);
+    m_monster.clearError(0);
 }
 
 void MainWindow::resetErrorElvSlot() {
-    m_monster.resetError(1);
+    m_monster.clearError(1);
 }
 
 void MainWindow::setModePid(uint index) {
