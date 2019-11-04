@@ -8,14 +8,18 @@
 #ifndef MONSTER_H_
 #define MONSTER_H_
 
+#include <QObject>
 #include <QtSerialPort>
+#include <QTcpSocket>
 
-class Monster : public QSerialPort {
+class Monster : public QObject {
     Q_OBJECT
 
 public:
     Monster();
     virtual ~Monster();
+    void reconnect();
+    QIODevice* getIoDevice() const;
     qreal getPwm(uint index);
     uint getCurrentAdc(uint index);
     qreal getCurrentAmp(uint index);
@@ -50,6 +54,7 @@ public:
     void setKi(uint index, int value);
     void setKd(uint index, int value);
 
+    void write(QString line);    
     void clearError(uint index);
     void readSettings(const QString &fileName);
     void setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance, 
@@ -72,6 +77,9 @@ private:
         ErrorHoming = 0x04, 
     } ControllerError;
 
+    QIODevice *m_io;
+    QSerialPort m_serial;
+    QTcpSocket m_socket;
     int m_timerSlowId;
     int m_timerFastId;
 

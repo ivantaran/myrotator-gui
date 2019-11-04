@@ -90,35 +90,35 @@ void MainWindow::openPortSlot() {
     QString name = m_widget.comboPorts->currentText();
     QSerialPortInfo info(name);
 
-    if (m_monster.isOpen()) {
+    if (m_monster.getIoDevice()->isOpen()) {
         return;
     }
 
-    if (info.isValid() && !info.isBusy()) {
-        m_monster.setPort(info);
-        bool ok = m_monster.open(QIODevice::ReadWrite);
-        if (ok) {
-            m_monster.requestConfigSlot();
-        }
-        else {
-            qWarning() << m_monster.errorString();
-        }
-    }
-    else {
-        if (!info.isValid()) {
-            qWarning() << info.systemLocation() << "invalid port";
-        }
-        if (info.isBusy()) {
-            qWarning() << info.systemLocation() << "port is busy";
-        }
-    }
+    // if (info.isValid() && !info.isBusy()) {
+    //     m_monster.setPort(info);
+    //     bool ok = m_monster.open(QIODevice::ReadWrite);
+    //     if (ok) {
+    //         m_monster.requestConfigSlot();
+    //     }
+    //     else {
+    //         qWarning() << m_monster.errorString();
+    //     }
+    // }
+    // else {
+    //     if (!info.isValid()) {
+    //         qWarning() << info.systemLocation() << "invalid port";
+    //     }
+    //     if (info.isBusy()) {
+    //         qWarning() << info.systemLocation() << "port is busy";
+    //     }
+    // }
 
     updateGuiSlot();
 }
 
 void MainWindow::updateGuiSlot() {
     QPalette pal = m_widget.frame->palette();
-    if (m_monster.isOpen()) {
+    if (m_monster.getIoDevice()->isOpen()) {
         pal.setColor(QPalette::Window, Qt::green);
     }
     else {
@@ -187,11 +187,12 @@ void MainWindow::updatedStateSlot(const QString &line) {
     }
     
     m_radar.setSensor(m_monster.getAngle(0), m_monster.getAngle(1), true);
+    updateGuiSlot();
 }
 
 void MainWindow::closePortSlot() {
-    if (m_monster.isOpen()) {
-        m_monster.close();
+    if (m_monster.getIoDevice()->isOpen()) {
+        m_monster.getIoDevice()->close();
     }
     updateGuiSlot();
 }
@@ -322,5 +323,5 @@ void MainWindow::readSettingsSlot() {
 }
 
 void MainWindow::sendStringSlot() {
-    m_monster.write((m_widget.editTerminal->text() + '\n').toUtf8());
+    m_monster.write(m_widget.editTerminal->text() + '\n');
 }

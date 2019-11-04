@@ -12,8 +12,9 @@
 #include "Monster.h"
 
 Monster::Monster() {
-    setBaudRate(QSerialPort::Baud115200);
-    connect(this, SIGNAL(readyRead()), this, SLOT(readyReadSlot()));
+    m_io = &m_socket;
+    m_serial.setBaudRate(QSerialPort::Baud115200);
+    connect(m_io, SIGNAL(readyRead()), this, SLOT(readyReadSlot()));
     m_timerSlowId = startTimer(3000);
     m_timerFastId = startTimer(200);
 }
@@ -25,9 +26,23 @@ Monster::~Monster() {
 void Monster::timerEvent(QTimerEvent *event) {
     if (event->timerId() == m_timerSlowId) {
         requestConfigSlot();
+        reconnect();
     }
     else if (event->timerId() == m_timerFastId) {
         requestPosition();
+    }
+}
+
+QIODevice* Monster::getIoDevice() const {
+    return m_io;
+}
+
+void Monster::reconnect() {
+    if (m_socket.state() == QTcpSocket::ConnectedState || m_socket.state() == QTcpSocket::ConnectingState) {
+
+    }
+    else {
+        m_socket.connectToHost("192.168.1.5", 4533);
     }
 }
 
@@ -58,17 +73,26 @@ void Monster::acceptConfigRegister(uint index, uint addr, int value) {
     }
 }
 
+void Monster::write(QString line) {
+    if (m_io != nullptr && m_io->isOpen() && m_io->isWritable()) {
+        if (m_io == &m_socket) {
+            line = "w " + line;
+        }
+        m_io->write(line.toUtf8());
+    }
+}
+
 void Monster::readyReadSlot() {
     bool ok_addr, ok_value;
     uint addr;
     int vi;
     qreal vr;
 
-    while (canReadLine()) {
-        m_stateLine = QString::fromUtf8(readLine()).trimmed();
+    while (m_io->canReadLine()) {
+        m_stateLine = QString::fromUtf8(m_io->readLine()).trimmed();
 
         QStringList list = m_stateLine.split(QChar(' '));
-        QRegExp r("([A-Z]{2})([0-9]+)?(\\,)?([-+]?[0-9]*\\.?[0-9]*)");
+        QRegExp r("([A-Z]{2})([-+]?[0-9]+\\.?[0-9]*)?(\\,)?([-+]?[0-9]*\\.?[0-9]*)");
         for (const auto &sub : list) {
             r.exactMatch(sub);
             if (r.cap(1) == "AR") {
@@ -271,105 +295,101 @@ qreal Monster::getTolerance(uint index) {
 
 void Monster::setMotion(uint index, qreal value) {
     int pwm = qRound(value * 2.55);
-    write(QString("set %1 motion %2\n").arg(index).arg(pwm).toUtf8());
+    write(QString("set %1 motion %2\n").arg(index).arg(pwm));
 }
 
 void Monster::setModePid(uint index, int kp, int ki, int kd) {
-    write(QString("set %1 pid %2,%3,%4\n").arg(index).arg(kp).arg(ki).arg(kd).toUtf8());
+    write(QString("set %1 pid %2,%3,%4\n").arg(index).arg(kp).arg(ki).arg(kd));
 }
 
 void Monster::setTarget(uint index, qreal angle) {
     int value = qRound(-4096.0 * angle / M_PI);
-    write(QString("set %1 target %2\n").arg(index).arg(value).toUtf8());
+    write(QString("set %1 target %2\n").arg(index).arg(value));
 }
 
 void Monster::setModeDefault(uint index) {
-    write(QString("set %1 default\n").arg(index).toUtf8());
+    write(QString("set %1 default\n").arg(index));
 }
 
 void Monster::setModeHoming(uint index) {
-    write(QString("set %1 homing\n").arg(index).toUtf8());
+    write(QString("set %1 homing\n").arg(index));
 }
 
 void Monster::clearError(uint index) {
-    write(QString("%1 \n").arg(index == 0 ? "AC" : "EC").toUtf8());
+    write(QString("%1 \n").arg(index == 0 ? "AC" : "EC"));
 }
 
 void Monster::requestConfigSlot() {
-    if (isOpen()) {
-        write(QString("AR0 AR1 AR2 AR3 AR4 AR5 AR6 AR7 AR8 \n").toUtf8());
-        write(QString("ER0 ER1 ER2 ER3 ER4 ER5 ER6 ER7 ER8 \n").toUtf8());
-        write(QString("GE GS \n").toUtf8());
-    }
+    write(QString("AR0 AR1 AR2 AR3 AR4 AR5 AR6 AR7 AR8 \n"));
+    write(QString("ER0 ER1 ER2 ER3 ER4 ER5 ER6 ER7 ER8 \n"));
+    write(QString("GE GS \n"));
 }
 
 void Monster::requestPosition() {
-    if (isOpen()) {
-        write(QString("AZ EL \n").toUtf8());
-    }
+    write(QString("AZ EL \n"));
 }
 
 void Monster::setPwmHoming(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('0')
-        .arg(qRound(value * 2.55)).toUtf8());
+        .arg(qRound(value * 2.55)));
 }
 
 void Monster::setPwmMin(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('1')
-        .arg(qRound(value * 2.55)).toUtf8());
+        .arg(qRound(value * 2.55)));
 }
 
 void Monster::setPwmMax(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('2')
-        .arg(qRound(value * 2.55)).toUtf8());
+        .arg(qRound(value * 2.55)));
 }
 
 void Monster::setAngleMin(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('3')
-        .arg(qRound(4096.0 * value / M_PI)).toUtf8());
+        .arg(qRound(4096.0 * value / M_PI)));
 }
 
 void Monster::setAngleMax(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('4')
-        .arg(qRound(4096.0 * value / M_PI)).toUtf8());
+        .arg(qRound(4096.0 * value / M_PI)));
 }
 
 void Monster::setTolerance(uint index, qreal value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('5')
-        .arg(qRound(4096.0 * value / M_PI)).toUtf8());
+        .arg(qRound(4096.0 * value / M_PI)));
 }
 
 void Monster::setKp(uint index, int value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('6')
-        .arg(value).toUtf8());
+        .arg(value));
 }
 
 void Monster::setKi(uint index, int value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('7')
-        .arg(value).toUtf8());
+        .arg(value));
 }
 
 void Monster::setKd(uint index, int value) {
     write(QString("%1%2,%3 \n")
         .arg(index == 0 ? "AW" : "EW")
         .arg('8')
-        .arg(value).toUtf8());
+        .arg(value));
 }
 
 void Monster::setConfig(uint index, qreal pwmHoming, qreal pwmMin, qreal pwmMax, qreal angleMin, qreal angleMax, qreal tolerance, 

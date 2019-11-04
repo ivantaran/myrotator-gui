@@ -5,7 +5,7 @@ UI_DIR = build
 RCC_DIR = build
 OBJECTS_DIR = build
 
-QT += widgets gui core serialport
+QT += widgets gui core serialport network
 
 CONFIG += c++11
 
