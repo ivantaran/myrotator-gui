@@ -20,7 +20,7 @@ static As5601 sensor[2] = {
 
 static Controller controller[2] = {
     Controller(&motor[0], &endstop[0], &sensor[0]), 
-    Controller(&motor[1], &endstop[1], &sensor[1]), 
+    Controller(&motor[1], &endstop[1], &sensor[1]),
 };
 
 int ms = 100;
@@ -85,6 +85,8 @@ typedef enum {
     CommandAc,
     CommandEc,
     CommandAl,
+    CommandReset,
+    CommandParking,
 } command_e;
 
 static const char* command_table[] {
@@ -127,7 +129,11 @@ static const char* command_table[] {
     "AC",   // Clear azimuth error 
     "EC",   // Clear elevation error
     "AL",   // Alarm message
+    "RESET",// Reset ? 
+    "PARK", // Go prarking
 };
+
+void (* self_reset)(void) = NULL;
 
 int accept_command_xr(Controller *c, const char *str) {
     int sendnum;
@@ -267,10 +273,12 @@ int accept_parameters(size_t addr, const char *str) {
         controller[0].movePositive();
         break;
     case CommandMu:
-        controller[1].movePositive();
+        controller[1].setTargetVelocity(1);
+        // controller[1].movePositive();
         break;
     case CommandMd:
-        controller[1].moveNegative();
+        controller[1].setTargetVelocity(-1);
+        // controller[1].moveNegative();
         break;
     case CommandSa:
         controller[0].setStatus(Controller::StatusIdle);
@@ -297,7 +305,7 @@ int accept_parameters(size_t addr, const char *str) {
         controller[1].clearError();
         break;
     case CommandVe:
-        Serial.print("myrotator");
+        Serial.print("VEmyrotator");
         sendnum++;
         break;
     case CommandGs:
@@ -316,6 +324,17 @@ int accept_parameters(size_t addr, const char *str) {
         Serial.print(' ');
         sendnum++;
         break;
+    case CommandReset:
+        self_reset();
+        // controller[0].clearError();
+        // controller[1].clearError();
+        // controller[0].setStatus(Controller::StatusIdle);
+        // controller[1].setStatus(Controller::StatusIdle);
+        break;
+    case CommandParking:
+        controller[0].setStatus(Controller::StatusUnhoming);
+        controller[1].setStatus(Controller::StatusUnhoming);
+        break;
     default:
         // Serial.print("ALcommand[");
         // Serial.print(addr);
@@ -329,20 +348,26 @@ int accept_parameters(size_t addr, const char *str) {
 }
 
 void accept_command(char *buffer) {
-    size_t i;
+    size_t i, nrows;
     int n, sendnum;
     char *str;
     
     sendnum = 0;
     n = MAXN_COMMANDS;
     str = strtok(buffer, " ");
-        
+    nrows = sizeof(command_table) / sizeof(command_table[0]);
     while (n-- && str) {
-        for (i = 0; i < sizeof(command_table) / sizeof(command_table[0]); i++) {
-            if (strncmp(command_table[i], str, 2) == 0) {
+        for (i = 0; i < nrows; i++) {
+            if (strlen(str) >= 2 && strncmp(command_table[i], str, 2) == 0) {
                     sendnum += accept_parameters(i, str);
                 break;
             }
+        }
+        if (i == nrows) {
+            Serial.print("ALunknown_command ");
+            Serial.print(str);
+            Serial.print(" ");
+            sendnum++;
         }
         str = strtok(NULL, " ");
     }

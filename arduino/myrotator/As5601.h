@@ -24,12 +24,13 @@ public:
     As5601(const As5601Type &type) {
         m_isHardware = (type == As5601::Hardware);
         
-        m_turnover = 0;
-        m_rawAngle[0] = -1;
-        m_rawAngle[1] = -1;
-        m_offset = 0;
         m_angle = 0;
         m_isValid = false;
+        m_offset = 0;
+        m_rawAngle[0] = -1;
+        m_rawAngle[1] = -1;
+        m_turnover = 0;
+        m_velocity = 0;
     }
 
     virtual ~As5601() {
@@ -60,6 +61,13 @@ public:
         return m_angle;
     }
 
+    int16_t getVelocity(bool *ok = nullptr) {
+        if (ok != nullptr) {
+            (*ok) = m_isValid;
+        }
+        return m_velocity;
+    }
+
     float getAngleDegrees(bool *ok = nullptr) {
         return (float)getAngle(ok) * 180.0f / -4096.0f;
     }
@@ -71,58 +79,69 @@ public:
     void requestSensorValue() {
         int16_t value = 0;
         uint8_t n = 0;
+        uint8_t err = 0;
 
         if (m_isHardware) {
             Wire.beginTransmission(AS5601_ADDR);
             Wire.write(byte(AS5601_ANGLE_ADDR));
-            Wire.endTransmission();
-            Wire.requestFrom(AS5601_ADDR, 2);
+            err = Wire.endTransmission();
+            if (err == 0) {
+                Wire.requestFrom(AS5601_ADDR, 2);
 
-            while (Wire.available()) {
-                byte c = Wire.read();
-                value = (value << 8) | c;
-                n++;
+                while (Wire.available()) {
+                    byte c = Wire.read();
+                    value = (value << 8) | c;
+                    n++;
+                }
+            } else {
+                m_isValid = false;
             }
         }
         else {
             softWire.beginTransmission(AS5601_ADDR);
             softWire.write(byte(AS5601_ANGLE_ADDR));
-            softWire.endTransmission();
-            softWire.requestFrom(AS5601_ADDR, 2);
+            err = softWire.endTransmission();
+            if (err == 0) {
+                softWire.requestFrom(AS5601_ADDR, 2);
 
-            while (softWire.available()) {
-                byte c = softWire.read();
-                value = (value << 8) | c;
-                n++;
+                while (softWire.available()) {
+                    byte c = softWire.read();
+                    value = (value << 8) | c;
+                    n++;
+                }
+            } else {
+                m_isValid = false;
             }
         }
         
         m_rawAngle[1] = m_rawAngle[0];
         m_rawAngle[0] = (n == 2) ? value : -1;
-        
-        if (m_rawAngle[1] - m_rawAngle[0] > AS5601_TURNOVER_VALUE / 2) {
+        m_velocity = m_rawAngle[1] - m_rawAngle[0];
+
+        if (m_velocity > AS5601_TURNOVER_VALUE / 2) {
             m_turnover++;
-        }
-        else if (m_rawAngle[0] - m_rawAngle[1] > AS5601_TURNOVER_VALUE / 2) {
+            m_velocity -= AS5601_TURNOVER_VALUE;
+        } else if (m_velocity < -AS5601_TURNOVER_VALUE / 2) {
             m_turnover--;
+            m_velocity += AS5601_TURNOVER_VALUE;
         }
         
         if (m_rawAngle[0] != -1 && m_rawAngle[1] != -1) {
             m_angle = m_rawAngle[0] + AS5601_TURNOVER_VALUE * m_turnover - m_offset;
             m_isValid = true;
-        }
-        else {
+        } else {
             m_isValid = false;
         }
     }
 
 private:
     bool m_isHardware;
-    int8_t m_turnover;
-    int16_t m_rawAngle[2];
-    int16_t m_offset;
-    int16_t m_angle;
     bool m_isValid;
+    int16_t m_angle;
+    int16_t m_offset;
+    int16_t m_rawAngle[2];
+    int16_t m_velocity;
+    int8_t m_turnover;
 
 };
 

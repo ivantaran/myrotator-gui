@@ -58,8 +58,10 @@ public:
         if (m_status != status) {
             if (m_error != ErrorOk) {
                 Serial.println("ALclear_error");
-            }
-            else {
+                m_status = StatusIdle;
+            } else if (status == StatusIdle) {
+                m_status = StatusIdle;
+            } else {
                 if (m_homingSuccess || (status == StatusHoming)) {
                     m_status = status;
                 }
@@ -98,6 +100,15 @@ public:
         }
         m_target = (long)(-4096.0f * value / 180.0f);
     }
+
+    void setTargetVelocity(int16_t value) {
+        if (m_status != StatusMoving) {
+            setStatus(StatusMoving);
+            m_target = 0;
+        }
+        m_target = value >= 0 ? m_target + 1 : m_target - 1;
+    }
+
 
     void setTolerance(long value) {
         m_tolerance = value;
@@ -165,6 +176,7 @@ public:
             unhoming();
             break;
         case StatusMoving:
+            pid();
             break;
         default:
             break;
@@ -216,14 +228,21 @@ private:
     bool m_unhomingSuccess;
 
     void pid() {
+        bool ok = false;
         m_deviation[2] = m_deviation[1];
         m_deviation[1] = m_deviation[0];
-        m_deviation[0] = m_sensor->getAngle() - m_target;
         
-        if (abs(m_deviation[0]) < m_tolerance) {
+        if (getStatus() == StatusPointing) {
+            m_deviation[0] = m_sensor->getAngle(&ok) - m_target;
+        } else if (getStatus() == StatusMoving) {
+            m_deviation[0] = m_sensor->getVelocity(&ok) - m_target;
+        } else {
             resetPid();
         }
-        else {
+        
+        if (abs(m_deviation[0]) < m_tolerance || !ok) {
+            resetPid();
+        } else {
             m_pidValue += m_kp * (m_deviation[0] - m_deviation[1]) 
                     + m_ki * m_deviation[0] 
                     + m_kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
@@ -286,6 +305,10 @@ private:
     }
 
     void setError(const ControllerError &error) {
+        if ((m_error & error) == error) {
+            return;
+        }
+
         m_error |= error;
         
         switch (error) {
