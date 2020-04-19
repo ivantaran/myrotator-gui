@@ -30,6 +30,9 @@ public:
         m_kp = 0;
         m_ki = 0;
         m_kd = 0;
+        m_kpVelocity = 0;
+        m_kiVelocity = 0;
+        m_kdVelocity = 0;
         m_target = 0;
         m_tolerance = 0;
         m_angleMin = 0;
@@ -101,12 +104,17 @@ public:
         m_target = (long)(-4096.0f * value / 180.0f);
     }
 
-    void setTargetVelocity(int16_t value) {
+    void setTargetVelocityMilliDegrees(int16_t value) {
         if (m_status != StatusMoving) {
             setStatus(StatusMoving);
-            m_target = 0;
         }
-        m_target = value >= 0 ? m_target + 1 : m_target - 1;
+        m_target = value / 219; // 219.73 ~ mdeg to sensor code coefficient
+        value %= 219;
+        value *= 9;
+        value /= 219;
+        if (value >= 5) {
+            m_target++;
+        }
     }
 
 
@@ -216,6 +224,9 @@ private:
     long m_kp;
     long m_ki;
     long m_kd;
+    long m_kpVelocity;
+    long m_kiVelocity;
+    long m_kdVelocity;
     long m_scale;
     long m_pidValueLimit;
     long m_tolerance;

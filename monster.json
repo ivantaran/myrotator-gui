@@ -15,7 +15,7 @@
         "pwmHoming": -32.0,
         "pwmMin": 31.0,
         "pwmMax": 100.0,
-        "angleMin": 0.0,
+        "angleMin": -90.0,
         "angleMax": 180.0,
         "tolerance": 0.5,
         "rate": 100,

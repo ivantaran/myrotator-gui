@@ -42,7 +42,8 @@ void Monster::reconnect() {
 
     }
     else {
-        m_socket.connectToHost("192.168.1.5", 4533);
+        // m_socket.connectToHost("192.168.1.5", 4533);
+        m_socket.connectToHost("192.168.1.40", 4533);
     }
 }
 

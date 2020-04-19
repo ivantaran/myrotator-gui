@@ -68,6 +68,16 @@ public:
         return m_velocity;
     }
 
+    int16_t getVelocityMilliDegrees(bool *ok = nullptr) {
+        int16_t mdeg = getVelocity(ok);
+        if (abs(mdeg) < 45) {
+            mdeg *= 220;
+        } else {
+            mdeg = (mdeg > 0) ? 9999 : -9999;
+        }
+        return mdeg;
+    }
+
     float getAngleDegrees(bool *ok = nullptr) {
         return (float)getAngle(ok) * 180.0f / -4096.0f;
     }

@@ -248,8 +248,7 @@ int accept_parameters(size_t addr, const char *str) {
             Serial.print((float)controller[0].getSensor()->getAngleDegrees(), 1);
             Serial.print(' ');
             sendnum++;
-        }
-        else {
+        } else {
             value = atof(str + 2);
             controller[0].setTargetDegrees(value);
         }
@@ -260,10 +259,69 @@ int accept_parameters(size_t addr, const char *str) {
             Serial.print((float)controller[1].getSensor()->getAngleDegrees(), 1);
             Serial.print(' ');
             sendnum++;
-        }
-        else {
+        } else {
             value = atof(str + 2);
             controller[1].setTargetDegrees(value);
+        }
+        break;
+    case CommandVl:
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            int16_t mdeg = controller[0].getSensor()->getVelocityMilliDegrees();
+            if (mdeg > 0) {
+                mdeg = 0;
+            }
+            Serial.print(mdeg);
+            Serial.print(' ');
+            sendnum++;
+        } else {
+            int vel = atoi(str + 2);
+            controller[0].setTargetVelocityMilliDegrees(-vel);
+        }
+        break;
+    case CommandVr:
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            int16_t mdeg = controller[0].getSensor()->getVelocityMilliDegrees();
+            if (mdeg < 0) {
+                mdeg = 0;
+            }
+            Serial.print(mdeg);
+            Serial.print(' ');
+            sendnum++;
+        } else {
+            int vel = atoi(str + 2);
+            controller[0].setTargetVelocityMilliDegrees(vel);
+        }
+        break;
+    case CommandVu:
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            int16_t mdeg = controller[1].getSensor()->getVelocityMilliDegrees();
+            if (mdeg < 0) {
+                mdeg = 0;
+            }
+            Serial.print(mdeg);
+            Serial.print(' ');
+            sendnum++;
+        } else {
+            int vel = atoi(str + 2);
+            controller[1].setTargetVelocityMilliDegrees(vel);
+        }
+        break;
+    case CommandVd:
+        if (str[2] == '\0' || str[2] == ' ') {
+            Serial.print(command_table[addr]);
+            int16_t mdeg = controller[1].getSensor()->getVelocityMilliDegrees();
+            if (mdeg > 0) {
+                mdeg = 0;
+            }
+            Serial.print(mdeg);
+            Serial.print(' ');
+            sendnum++;
+        } else {
+            int vel = atoi(str + 2);
+            controller[1].setTargetVelocityMilliDegrees(-vel);
         }
         break;
     case CommandMl:
@@ -273,12 +331,10 @@ int accept_parameters(size_t addr, const char *str) {
         controller[0].movePositive();
         break;
     case CommandMu:
-        controller[1].setTargetVelocity(1);
-        // controller[1].movePositive();
+        controller[1].setTargetVelocityMilliDegrees(2000);
         break;
     case CommandMd:
-        controller[1].setTargetVelocity(-1);
-        // controller[1].moveNegative();
+        controller[1].setTargetVelocityMilliDegrees(-2000);
         break;
     case CommandSa:
         controller[0].setStatus(Controller::StatusIdle);

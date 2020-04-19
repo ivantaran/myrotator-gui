@@ -45,20 +45,24 @@ public:
     }
 
     void setMotion(long value) {
-        if (abs(value) <= (long)m_pwmMin) {
+        long absValue = abs(value);
+        if (value == 0) {
             m_pwm = 0;
             brake();
-        }
-        else {
-            m_pwm = (abs(value) > (long)m_pwmMax) ? m_pwmMax : abs(value);
+        } else {
+            if (absValue <= (long)m_pwmMin) {
+                m_pwm = m_pwmMin;
+            } else if (absValue > (long)m_pwmMax) {
+                m_pwm = m_pwmMax;
+            } else {
+                m_pwm = absValue;
+            }
             if (value > 0) {
                 setMotionRight();
-            }
-            else {
+            } else {
                 setMotionLeft();
             }
         }
-
         analogWrite(m_pinPwm, m_pwm);
     }
     
