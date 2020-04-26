@@ -50,8 +50,8 @@ public:
         m_offset = 0;
     }
     
-    void setZero() {
-        m_offset = m_angle;  // TODO: remove turnover's
+    void setZero(int16_t hardwareOffset) {
+        m_offset = m_angle + hardwareOffset;  // TODO: remove turnover's
     }
     
     int16_t getAngle(bool *ok = nullptr) {

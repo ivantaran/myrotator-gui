@@ -26,7 +26,7 @@ public:
         ErrorUnhoming = 0x08, 
     } ControllerError;
 
-    Controller(MyMotor *motor, Endstop *endstop, As5601 *sensor) {
+    Controller(MyMotor *motor, Endstop *endstop, As5601 *sensor, int16_t hardwareAngleOffset) {
         m_kp = 0;
         m_ki = 0;
         m_kd = 0;
@@ -42,6 +42,7 @@ public:
         m_motor = motor;
         m_endstop = endstop;
         m_sensor = sensor;
+        m_hardwareAngleOffset = hardwareAngleOffset;
         m_homingSuccess = false;
 
         resetPid();
@@ -95,6 +96,18 @@ public:
 
     void setKd(long value) {
         m_kd = value;
+    }
+
+    void setKpVelocity(long value) {
+        m_kpVelocity = value;
+    }
+
+    void setKiVelocity(long value) {
+        m_kiVelocity = value;
+    }
+
+    void setKdVelocity(long value) {
+        m_kdVelocity = value;
     }
     
     void setTargetDegrees(float value) {
@@ -150,6 +163,18 @@ public:
         return m_kd;
     }
 
+    inline long getKpVelocity() {
+        return m_kpVelocity;
+    }
+
+    inline long getKiVelocity() {
+        return m_kiVelocity;
+    }
+
+    inline long getKdVelocity() {
+        return m_kdVelocity;
+    }
+
     inline long getTolerance() {
         return m_tolerance;
     }
@@ -175,7 +200,7 @@ public:
 
         switch (m_status) {
         case StatusPointing:
-            pid();
+            pid(m_kp, m_ki, m_kd, m_tolerance, m_sensor->getAngle() - m_target);
             break;
         case StatusHoming:
             homing();
@@ -184,23 +209,13 @@ public:
             unhoming();
             break;
         case StatusMoving:
-            pid();
+            pid(m_kpVelocity, m_kiVelocity, m_kdVelocity, 0, m_sensor->getVelocity() - m_target);
             break;
         default:
             break;
         }
     }
     
-    void movePositive() {
-        m_motor->setMotion(abs(m_motor->getPwmHoming()));
-        setStatus(StatusMoving);
-    }
-
-    void moveNegative() {
-        m_motor->setMotion(-abs(m_motor->getPwmHoming()));
-        setStatus(StatusMoving);
-    }
-
     MyMotor *getMotor() {
         return m_motor;
     }
@@ -220,6 +235,7 @@ private:
 
     ControllerStatus m_status;
     uint8_t m_error;
+    int16_t m_hardwareAngleOffset;
 
     long m_kp;
     long m_ki;
@@ -238,30 +254,20 @@ private:
     bool m_homingSuccess;
     bool m_unhomingSuccess;
 
-    void pid() {
-        bool ok = false;
+    void pid(long kp, long ki, long kd, long tolerance, long error) {
         m_deviation[2] = m_deviation[1];
         m_deviation[1] = m_deviation[0];
+        m_deviation[0] = error;
         
-        if (getStatus() == StatusPointing) {
-            m_deviation[0] = m_sensor->getAngle(&ok) - m_target;
-        } else if (getStatus() == StatusMoving) {
-            m_deviation[0] = m_sensor->getVelocity(&ok) - m_target;
-        } else {
-            resetPid();
-        }
-        
-        if (abs(m_deviation[0]) < m_tolerance || !ok) {
+        if (abs(m_deviation[0]) < tolerance) {
             resetPid();
         } else {
-            m_pidValue += m_kp * (m_deviation[0] - m_deviation[1]) 
-                    + m_ki * m_deviation[0] 
-                    + m_kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
+            m_pidValue += kp * (m_deviation[0] - m_deviation[1]) + ki * m_deviation[0] 
+                    + kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
 
             if (m_pidValue > m_pidValueLimit) {
                 m_pidValue = m_pidValueLimit;
-            }
-            else if (m_pidValue < -m_pidValueLimit) {
+            } else if (m_pidValue < -m_pidValueLimit) {
                 m_pidValue = -m_pidValueLimit;
             }
             m_motor->setMotion(m_pidValue / m_scale);
@@ -292,11 +298,15 @@ private:
             }
             else {
                 if (m_endstop->isEnd()) {
-                    m_sensor->setZero();
+                    m_sensor->setZero(m_hardwareAngleOffset);
                     m_homingSuccess = true;
                     setStatus(StatusIdle);
                 } else {
-                    m_motor->setMotion(m_motor->getPwmHoming());
+                    if (m_sensor->getAngle() < AS5601_TURNOVER_VALUE / 2) {
+                        m_motor->setMotion(m_motor->getPwmHoming());
+                    } else {
+                        m_motor->setMotion(-m_motor->getPwmHoming());
+                    }
                 }
             }
         }
@@ -310,7 +320,11 @@ private:
             if (!m_endstop->isEnd()) {
                 setStatus(StatusHoming);
             } else {
-                m_motor->setMotion(-m_motor->getPwmHoming());
+                if (m_sensor->getAngle() < AS5601_TURNOVER_VALUE / 2) {
+                    m_motor->setMotion(-m_motor->getPwmHoming());
+                } else {
+                    m_motor->setMotion(m_motor->getPwmHoming());
+                }
             }
         }
     }
@@ -335,6 +349,15 @@ private:
         }
     }
 
+    void movePositive() {
+        m_motor->setMotion(abs(m_motor->getPwmHoming()));
+        setStatus(StatusMoving);
+    }
+
+    void moveNegative() {
+        m_motor->setMotion(-abs(m_motor->getPwmHoming()));
+        setStatus(StatusMoving);
+    }
 };
 
 #endif /* CONTROLLER_H_ */

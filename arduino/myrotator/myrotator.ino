@@ -2,6 +2,10 @@
 #include "Controller.h"
 
 #define MAXN_COMMANDS 64
+#define HW_ANGLE_OFFSET_AZM_DEG 0.0
+#define HW_ANGLE_OFFSET_ELV_DEG 45.0
+#define HW_ANGLE_OFFSET_AZM ((int16_t)(HW_ANGLE_OFFSET_AZM_DEG * AS5601_TURNOVER_VALUE / 180.0))
+#define HW_ANGLE_OFFSET_ELV ((int16_t)(HW_ANGLE_OFFSET_ELV_DEG * AS5601_TURNOVER_VALUE / 180.0))
 
 static MyMotor motor[2] = {
     MyMotor(PIN_INA1, PIN_INB1, PIN_CS1, PIN_EN1, PIN_PWM1), 
@@ -19,8 +23,8 @@ static As5601 sensor[2] = {
 };
 
 static Controller controller[2] = {
-    Controller(&motor[0], &endstop[0], &sensor[0]), 
-    Controller(&motor[1], &endstop[1], &sensor[1]),
+    Controller(&motor[0], &endstop[0], &sensor[0], HW_ANGLE_OFFSET_AZM), 
+    Controller(&motor[1], &endstop[1], &sensor[1], HW_ANGLE_OFFSET_ELV),
 };
 
 int ms = 100;
@@ -172,6 +176,15 @@ int accept_command_xr(Controller *c, const char *str) {
         case '8':
             Serial.print(c->getKd());
             break;
+        case '9':
+            Serial.print(c->getKpVelocity());
+            break;
+        case 'a':
+            Serial.print(c->getKiVelocity());
+            break;
+        case 'b':
+            Serial.print(c->getKdVelocity());
+            break;
         default:
             Serial.print('0');
             break;
@@ -225,6 +238,20 @@ void accept_command_xw(Controller *c, const char *str) {
         case '8':
             vl = atol(str + 4);
             c->setKd(vl);
+            break;
+        case '9':
+            vl = atol(str + 4);
+            c->setKpVelocity(vl);
+            break;
+        case 'a':
+            vl = atol(str + 4);
+            c->setKiVelocity(vl);
+            break;
+        case 'b':
+            vl = atol(str + 4);
+            c->setKdVelocity(vl);
+            break;
+        default:
             break;
         }
     }
@@ -325,10 +352,10 @@ int accept_parameters(size_t addr, const char *str) {
         }
         break;
     case CommandMl:
-        controller[0].moveNegative();
+        controller[0].setTargetVelocityMilliDegrees(-2000);
         break;
     case CommandMr:
-        controller[0].movePositive();
+        controller[0].setTargetVelocityMilliDegrees(2000);
         break;
     case CommandMu:
         controller[1].setTargetVelocityMilliDegrees(2000);
@@ -382,21 +409,12 @@ int accept_parameters(size_t addr, const char *str) {
         break;
     case CommandReset:
         self_reset();
-        // controller[0].clearError();
-        // controller[1].clearError();
-        // controller[0].setStatus(Controller::StatusIdle);
-        // controller[1].setStatus(Controller::StatusIdle);
         break;
     case CommandParking:
         controller[0].setStatus(Controller::StatusUnhoming);
         controller[1].setStatus(Controller::StatusUnhoming);
         break;
     default:
-        // Serial.print("ALcommand[");
-        // Serial.print(addr);
-        // Serial.print("] skipped: ");
-        // Serial.println(str);
-        // sendnum++;
         break;
     }
     
