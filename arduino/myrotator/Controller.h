@@ -1,9 +1,11 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
-#include "MyMotor.h"
 #include "As5601.h"
 #include "Endstop.h"
+#include "MyMotor.h"
+
+#define CONTROLLER_HOMING_SPEED 4000
 
 class Controller {
 
@@ -13,20 +15,21 @@ public:
         StatusIdle = 0x01,
         StatusMoving = 0x02,
         StatusPointing = 0x04,
-        StatusError = 0x08, 
+        StatusError = 0x08,
         StatusHoming = 0x10,
         StatusUnhoming = 0x20,
     } ControllerStatus;
-    
+
     typedef enum {
-        ErrorOk = 0x00, 
-        ErrorSensor = 0x01, 
-        ErrorJam = 0x02, 
-        ErrorHoming = 0x04, 
-        ErrorUnhoming = 0x08, 
+        ErrorOk = 0x00,
+        ErrorSensor = 0x01,
+        ErrorJam = 0x02,
+        ErrorHoming = 0x04,
+        ErrorUnhoming = 0x08,
     } ControllerError;
 
-    Controller(MyMotor *motor, Endstop *endstop, As5601 *sensor, int16_t hardwareAngleOffset) {
+    Controller(MyMotor *motor, Endstop *endstop, Endstop *endstopExtra, As5601 *sensor,
+               int16_t hardwareAngleOffset) {
         m_kp = 0;
         m_ki = 0;
         m_kd = 0;
@@ -41,20 +44,22 @@ public:
         m_error = ErrorOk;
         m_motor = motor;
         m_endstop = endstop;
+        m_endstopExtra = endstopExtra;
         m_sensor = sensor;
         m_hardwareAngleOffset = hardwareAngleOffset;
         m_homingSuccess = false;
+        m_angleAmbiguity = false;
 
         resetPid();
     }
 
     virtual ~Controller() {
-
     }
-    
+
     void begin() {
         m_motor->begin();
         m_endstop->begin();
+        m_endstopExtra->begin();
         m_sensor->begin();
     }
 
@@ -68,8 +73,7 @@ public:
             } else {
                 if (m_homingSuccess || (status == StatusHoming)) {
                     m_status = status;
-                }
-                else {
+                } else {
                     m_status = StatusUnhoming;
                 }
 
@@ -109,7 +113,7 @@ public:
     void setKdVelocity(long value) {
         m_kdVelocity = value;
     }
-    
+
     void setTargetDegrees(float value) {
         if (m_status != StatusPointing) {
             setStatus(StatusPointing);
@@ -118,7 +122,7 @@ public:
     }
 
     void setTargetVelocityMilliDegrees(int16_t value) {
-        if (m_status != StatusMoving) {
+        if (m_status != StatusMoving && m_status != StatusHoming && m_status != StatusUnhoming) {
             setStatus(StatusMoving);
         }
         m_target = value / 219; // 219.73 ~ mdeg to sensor code coefficient
@@ -129,7 +133,6 @@ public:
             m_target++;
         }
     }
-
 
     void setTolerance(long value) {
         m_tolerance = value;
@@ -150,7 +153,7 @@ public:
     inline const ControllerStatus &getStatus() {
         return m_status;
     }
-    
+
     inline long getKp() {
         return m_kp;
     }
@@ -193,7 +196,7 @@ public:
 
     void execute() {
         m_sensor->requestSensorValue();
-        
+
         if (!m_sensor->isValid()) {
             setError(ErrorSensor);
         }
@@ -204,9 +207,11 @@ public:
             break;
         case StatusHoming:
             homing();
+            pid(m_kpVelocity, m_kiVelocity, m_kdVelocity, 0, m_sensor->getVelocity() - m_target);
             break;
         case StatusUnhoming:
             unhoming();
+            pid(m_kpVelocity, m_kiVelocity, m_kdVelocity, 0, m_sensor->getVelocity() - m_target);
             break;
         case StatusMoving:
             pid(m_kpVelocity, m_kiVelocity, m_kdVelocity, 0, m_sensor->getVelocity() - m_target);
@@ -215,7 +220,7 @@ public:
             break;
         }
     }
-    
+
     MyMotor *getMotor() {
         return m_motor;
     }
@@ -232,38 +237,40 @@ private:
     MyMotor *m_motor;
     As5601 *m_sensor;
     Endstop *m_endstop;
+    Endstop *m_endstopExtra;
 
     ControllerStatus m_status;
     uint8_t m_error;
     int16_t m_hardwareAngleOffset;
 
-    long m_kp;
-    long m_ki;
-    long m_kd;
-    long m_kpVelocity;
-    long m_kiVelocity;
-    long m_kdVelocity;
-    long m_scale;
-    long m_pidValueLimit;
-    long m_tolerance;
-    long m_target;
-    long m_deviation[3];
-    long m_pidValue;
-    long m_angleMin;
-    long m_angleMax;
     bool m_homingSuccess;
     bool m_unhomingSuccess;
+    bool m_angleAmbiguity;
+    long m_angleMax;
+    long m_angleMin;
+    long m_deviation[3];
+    long m_kd;
+    long m_kdVelocity;
+    long m_ki;
+    long m_kiVelocity;
+    long m_kp;
+    long m_kpVelocity;
+    long m_pidValue;
+    long m_pidValueLimit;
+    long m_scale;
+    long m_target;
+    long m_tolerance;
 
     void pid(long kp, long ki, long kd, long tolerance, long error) {
         m_deviation[2] = m_deviation[1];
         m_deviation[1] = m_deviation[0];
         m_deviation[0] = error;
-        
+
         if (abs(m_deviation[0]) < tolerance) {
             resetPid();
         } else {
-            m_pidValue += kp * (m_deviation[0] - m_deviation[1]) + ki * m_deviation[0] 
-                    + kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
+            m_pidValue += kp * (m_deviation[0] - m_deviation[1]) + ki * m_deviation[0] +
+                          kd * (m_deviation[0] - m_deviation[1] - m_deviation[1] + m_deviation[2]);
 
             if (m_pidValue > m_pidValueLimit) {
                 m_pidValue = m_pidValueLimit;
@@ -278,7 +285,7 @@ private:
         m_scale = value;
         m_pidValueLimit = (long)m_motor->getPwmMax() * m_scale;
     }
-    
+
     void resetPid() {
         m_pidValue = 0;
         m_deviation[0] = 0;
@@ -291,21 +298,31 @@ private:
     void homing() {
         if (m_homingSuccess) {
             setStatus(StatusIdle);
-        }
-        else {
+        } else {
             if (abs(m_sensor->getAngle()) > m_angleMax) {
                 setError(ErrorHoming);
-            }
-            else {
+            } else {
+                if (m_endstopExtra->isEnd()) {
+                    m_angleAmbiguity = true;
+                }
                 if (m_endstop->isEnd()) {
                     m_sensor->setZero(m_hardwareAngleOffset);
                     m_homingSuccess = true;
+                    m_angleAmbiguity = false;
                     setStatus(StatusIdle);
                 } else {
                     if (m_sensor->getAngle() < AS5601_TURNOVER_VALUE / 2) {
-                        m_motor->setMotion(m_motor->getPwmHoming());
+                        if (m_angleAmbiguity) {
+                            setTargetVelocityMilliDegrees(-CONTROLLER_HOMING_SPEED);
+                        } else {
+                            setTargetVelocityMilliDegrees(CONTROLLER_HOMING_SPEED);
+                        }
                     } else {
-                        m_motor->setMotion(-m_motor->getPwmHoming());
+                        if (m_angleAmbiguity) {
+                            setTargetVelocityMilliDegrees(CONTROLLER_HOMING_SPEED);
+                        } else {
+                            setTargetVelocityMilliDegrees(-CONTROLLER_HOMING_SPEED);
+                        }
                     }
                 }
             }
@@ -315,16 +332,16 @@ private:
     void unhoming() {
         if (abs(m_sensor->getAngle()) > m_angleMax) {
             setError(ErrorUnhoming);
-        }
-        else {
-            if (!m_endstop->isEnd()) {
-                setStatus(StatusHoming);
-            } else {
+        } else {
+            if (m_endstop->isEnd()) {
+                m_angleAmbiguity = false;
                 if (m_sensor->getAngle() < AS5601_TURNOVER_VALUE / 2) {
-                    m_motor->setMotion(-m_motor->getPwmHoming());
+                    setTargetVelocityMilliDegrees(CONTROLLER_HOMING_SPEED);
                 } else {
-                    m_motor->setMotion(m_motor->getPwmHoming());
+                    setTargetVelocityMilliDegrees(-CONTROLLER_HOMING_SPEED);
                 }
+            } else {
+                setStatus(StatusHoming);
             }
         }
     }
@@ -335,7 +352,7 @@ private:
         }
 
         m_error |= error;
-        
+
         switch (error) {
         case ErrorHoming:
             m_sensor->resetOffset();

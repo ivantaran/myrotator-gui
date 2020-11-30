@@ -1,7 +1,6 @@
 #ifndef ENDSTOP_H_
 #define ENDSTOP_H_
 
-
 class Endstop {
 public:
     Endstop(uint8_t pin) {
@@ -9,9 +8,8 @@ public:
     }
 
     virtual ~Endstop() {
-
     }
-    
+
     void begin() {
         pinMode(m_pin, INPUT_PULLUP);
     }
@@ -22,7 +20,6 @@ public:
 
 private:
     uint8_t m_pin;
-
 };
 
 #endif /* ENDSTOP_H_ */

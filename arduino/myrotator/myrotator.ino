@@ -25,8 +25,8 @@ static As5601 sensor[] = {
 };
 
 static Controller controller[] = {
-    Controller(&motor[0], &endstop[0], &sensor[0], HW_ANGLE_OFFSET_AZM),
-    Controller(&motor[1], &endstop[1], &sensor[1], HW_ANGLE_OFFSET_ELV),
+    Controller(&motor[0], &endstop[0], &endstop[2], &sensor[0], HW_ANGLE_OFFSET_AZM),
+    Controller(&motor[1], &endstop[2], &endstop[3], &sensor[1], HW_ANGLE_OFFSET_ELV),
 };
 
 int ms = 100;
@@ -34,8 +34,7 @@ int ms = 100;
 unsigned long t0 = 0;
 const char *delimeters = " ,";
 
-void setup()
-{
+void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.begin(UART_SPEED);
@@ -47,14 +46,12 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void timer_event()
-{
+void timer_event() {
     controller[0].execute();
     controller[1].execute();
 }
 
-typedef enum
-{
+typedef enum {
     CommandAz,
     CommandEl,
     CommandUp,
@@ -102,7 +99,7 @@ static const char *command_table[]{
     "AZ", // Azimuth             number - 1 decimal place [deg]
     "EL", // Elevation           number - 1 decimal place [deg]
     "UP", // Uplink freq         in Hertz
-    "DN", // Downlink freq		in Hertz
+    "DN", // Downlink freq		 in Hertz
     "DM", // Downlink Mode       ascii, eg SSB, FM
     "UM", // Uplink Mode         ascii, eg SSB, FM
     "DR", // Downlink Radio      number
@@ -113,8 +110,10 @@ static const char *command_table[]{
     "MD", // Move Down
     "SA", // Stop azimuth moving
     "SE", // Stop elevation moving
-    "AO", // AOS Acquisition of Signal (or Satellite). AOS is the time that a satellite rises above the horizon of an observer.
-    "LO", // LOS stands for Loss of Signal (or Satellite). LOS is the time that a satellite passes below the observer’s horizon.
+    "AO", // AOS Acquisition of Signal (or Satellite). AOS is the time that a satellite rises above
+          // the horizon of an observer.
+    "LO", // LOS stands for Loss of Signal (or Satellite). LOS is the time that a satellite passes
+          // below the observer’s horizon.
     "ST", // Set time            YY:MM:DD:HH:MM:SS
 
     "VL", // Velocity Left	    number [mdeg/s]
@@ -144,19 +143,16 @@ static const char *command_table[]{
 
 void (*self_reset)(void) = NULL;
 
-int accept_command_xr(Controller *c, const char *str)
-{
+int accept_command_xr(Controller *c, const char *str) {
     int sendnum;
 
     sendnum = 0;
 
-    if (str[2] != '\0')
-    {
+    if (str[2] != '\0') {
         Serial.write(str, 3);
         Serial.print(',');
 
-        switch (str[2])
-        {
+        switch (str[2]) {
         case '0':
             Serial.print(c->getMotor()->getPwmHoming());
             break;
@@ -205,15 +201,12 @@ int accept_command_xr(Controller *c, const char *str)
     return sendnum;
 }
 
-void accept_command_xw(Controller *c, const char *str)
-{
+void accept_command_xw(Controller *c, const char *str) {
     int vi;
     long vl;
 
-    if (str[2] != '\0' && str[3] != '\0' && str[3] == ',')
-    {
-        switch (str[2])
-        {
+    if (str[2] != '\0' && str[3] != '\0' && str[3] == ',') {
+        switch (str[2]) {
         case '0':
             vi = atoi(str + 4);
             c->getMotor()->setPwmHoming(vi);
@@ -268,121 +261,96 @@ void accept_command_xw(Controller *c, const char *str)
     }
 }
 
-int accept_parameters(size_t addr, const char *str)
-{
+int accept_parameters(size_t addr, const char *str) {
     float value;
     int sendnum;
 
-    union
-    {
+    union {
         uint8_t u8[2];
         uint16_t u16;
     } union16;
 
     sendnum = 0;
 
-    switch (addr)
-    {
+    switch (addr) {
     case CommandAz:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             Serial.print((float)controller[0].getSensor()->getAngleDegrees(), 1);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             value = atof(str + 2);
             controller[0].setTargetDegrees(value);
         }
         break;
     case CommandEl:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             Serial.print((float)controller[1].getSensor()->getAngleDegrees(), 1);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             value = atof(str + 2);
             controller[1].setTargetDegrees(value);
         }
         break;
     case CommandVl:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             int16_t mdeg = controller[0].getSensor()->getVelocityMilliDegrees();
-            if (mdeg > 0)
-            {
+            if (mdeg > 0) {
                 mdeg = 0;
             }
             Serial.print(mdeg);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             int vel = atoi(str + 2);
             controller[0].setTargetVelocityMilliDegrees(-vel);
         }
         break;
     case CommandVr:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             int16_t mdeg = controller[0].getSensor()->getVelocityMilliDegrees();
-            if (mdeg < 0)
-            {
+            if (mdeg < 0) {
                 mdeg = 0;
             }
             Serial.print(mdeg);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             int vel = atoi(str + 2);
             controller[0].setTargetVelocityMilliDegrees(vel);
         }
         break;
     case CommandVu:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             int16_t mdeg = controller[1].getSensor()->getVelocityMilliDegrees();
-            if (mdeg < 0)
-            {
+            if (mdeg < 0) {
                 mdeg = 0;
             }
             Serial.print(mdeg);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             int vel = atoi(str + 2);
             controller[1].setTargetVelocityMilliDegrees(vel);
         }
         break;
     case CommandVd:
-        if (str[2] == '\0' || str[2] == ' ')
-        {
+        if (str[2] == '\0' || str[2] == ' ') {
             Serial.print(command_table[addr]);
             int16_t mdeg = controller[1].getSensor()->getVelocityMilliDegrees();
-            if (mdeg > 0)
-            {
+            if (mdeg > 0) {
                 mdeg = 0;
             }
             Serial.print(mdeg);
             Serial.print(' ');
             sendnum++;
-        }
-        else
-        {
+        } else {
             int vel = atoi(str + 2);
             controller[1].setTargetVelocityMilliDegrees(-vel);
         }
@@ -457,8 +425,7 @@ int accept_parameters(size_t addr, const char *str)
     return sendnum;
 }
 
-void accept_command(char *buffer)
-{
+void accept_command(char *buffer) {
     size_t i, nrows;
     int n, sendnum;
     char *str;
@@ -467,18 +434,14 @@ void accept_command(char *buffer)
     n = MAXN_COMMANDS;
     str = strtok(buffer, " ");
     nrows = sizeof(command_table) / sizeof(command_table[0]);
-    while (n-- && str)
-    {
-        for (i = 0; i < nrows; i++)
-        {
-            if (strlen(str) >= 2 && strncmp(command_table[i], str, 2) == 0)
-            {
+    while (n-- && str) {
+        for (i = 0; i < nrows; i++) {
+            if (strlen(str) >= 2 && strncmp(command_table[i], str, 2) == 0) {
                 sendnum += accept_parameters(i, str);
                 break;
             }
         }
-        if (i == nrows)
-        {
+        if (i == nrows) {
             Serial.print("ALunknown_command ");
             Serial.print(str);
             Serial.print(" ");
@@ -487,41 +450,31 @@ void accept_command(char *buffer)
         str = strtok(NULL, " ");
     }
 
-    if (sendnum > 0)
-    {
+    if (sendnum > 0) {
         Serial.println();
     }
 }
 
-void accept_serial()
-{
+void accept_serial() {
     static char buffer[256];
     static unsigned char pointer = 0;
 
-    if (Serial.available() > 0)
-    {
+    if (Serial.available() > 0) {
         buffer[pointer] = (char)Serial.read();
-        if (buffer[pointer] == '\r' || buffer[pointer] == '\n')
-        {
+        if (buffer[pointer] == '\r' || buffer[pointer] == '\n') {
             buffer[pointer] = '\0';
             accept_command(buffer);
             pointer = 0;
-        }
-        else if (pointer < sizeof(buffer) - 1)
-        {
+        } else if (pointer < sizeof(buffer) - 1) {
             pointer++;
-        }
-        else
-        {
+        } else {
             pointer = 0;
         }
     }
 }
 
-void loop()
-{
-    if (millis() - t0 >= TIMER_PERIOD)
-    {
+void loop() {
+    if (millis() - t0 >= TIMER_PERIOD) {
         t0 += TIMER_PERIOD;
         timer_event();
     }

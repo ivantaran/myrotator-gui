@@ -9,11 +9,11 @@
 #include <SoftWire.h>
 #include <Wire.h>
 
-#define AS5601_ADDR       0x36
+#define AS5601_ADDR 0x36
 #define AS5601_ANGLE_ADDR 0x0e
 
-#define AS5601_RATIO            2
-#define AS5601_TURNOVER_VALUE   4096
+#define AS5601_RATIO 2
+#define AS5601_TURNOVER_VALUE 4096
 
 SoftWire softWire = SoftWire();
 
@@ -23,7 +23,7 @@ public:
 
     As5601(const As5601Type &type) {
         m_isHardware = (type == As5601::Hardware);
-        
+
         m_angle = 0;
         m_isValid = false;
         m_offset = 0;
@@ -34,14 +34,12 @@ public:
     }
 
     virtual ~As5601() {
-
     }
-    
+
     void begin() {
         if (m_isHardware) {
             Wire.begin();
-        }
-        else {
+        } else {
             softWire.begin();
         }
     }
@@ -49,11 +47,11 @@ public:
     void resetOffset() {
         m_offset = 0;
     }
-    
+
     void setZero(int16_t hardwareOffset) {
-        m_offset = m_angle + hardwareOffset;  // TODO: remove turnover's
+        m_offset = m_angle + hardwareOffset; // TODO: remove turnover's
     }
-    
+
     int16_t getAngle(bool *ok = nullptr) {
         if (ok != nullptr) {
             (*ok) = m_isValid;
@@ -106,8 +104,7 @@ public:
             } else {
                 m_isValid = false;
             }
-        }
-        else {
+        } else {
             softWire.beginTransmission(AS5601_ADDR);
             softWire.write(byte(AS5601_ANGLE_ADDR));
             err = softWire.endTransmission();
@@ -123,7 +120,7 @@ public:
                 m_isValid = false;
             }
         }
-        
+
         m_rawAngle[1] = m_rawAngle[0];
         m_rawAngle[0] = (n == 2) ? value : -1;
         m_velocity = m_rawAngle[1] - m_rawAngle[0];
@@ -135,7 +132,7 @@ public:
             m_turnover--;
             m_velocity += AS5601_TURNOVER_VALUE;
         }
-        
+
         if (m_rawAngle[0] != -1 && m_rawAngle[1] != -1) {
             m_angle = m_rawAngle[0] + AS5601_TURNOVER_VALUE * m_turnover - m_offset;
             m_isValid = true;
@@ -152,7 +149,6 @@ private:
     int16_t m_rawAngle[2];
     int16_t m_velocity;
     int8_t m_turnover;
-
 };
 
 #endif /* AS5601_H_ */

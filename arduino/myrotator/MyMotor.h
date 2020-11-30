@@ -1,27 +1,27 @@
 #ifndef MYMOTOR_H_
 #define MYMOTOR_H_
 
-#define PIN_EN1   A0
-#define PIN_EN2   A1
-#define PIN_CS1   A2
-#define PIN_CS2   A3
+#define PIN_EN1 A0
+#define PIN_EN2 A1
+#define PIN_CS1 A2
+#define PIN_CS2 A3
 
-#define PIN_INA1  7
-#define PIN_INB1  8
+#define PIN_INA1 7
+#define PIN_INB1 8
 
-#define PIN_INA2  4
-#define PIN_INB2  9
+#define PIN_INA2 4
+#define PIN_INB2 9
 
-#define PIN_PWM1  5
-#define PIN_PWM2  6
+#define PIN_PWM1 5
+#define PIN_PWM2 6
 
-#define PWM_MASK  0xff
+#define PWM_MASK 0xff
 
-#define TIMER_PERIOD    200ul
-#define UART_SPEED      115200
+#define TIMER_PERIOD 200ul
+#define UART_SPEED 115200
 
 class MyMotor {
-public:    
+public:
     MyMotor(uint8_t pinIna, uint8_t pinInb, uint8_t pinCs, uint8_t pinEn, uint8_t pinPwm) {
         m_pinIna = pinIna;
         m_pinInb = pinInb;
@@ -34,9 +34,10 @@ public:
         m_pwmMax = 0;
         m_pwmHoming = 0;
     }
-    
-    virtual ~MyMotor() {}
-    
+
+    virtual ~MyMotor() {
+    }
+
     void begin() {
         pinMode(m_pinIna, OUTPUT);
         pinMode(m_pinInb, OUTPUT);
@@ -65,7 +66,7 @@ public:
         }
         analogWrite(m_pinPwm, m_pwm);
     }
-    
+
     void setPwmMin(uint8_t value) {
         m_pwmMin = value;
         if (m_pwmMin > m_pwmMax) {
@@ -118,7 +119,7 @@ public:
 
 private:
     uint8_t m_pinIna;
-    uint8_t m_pinInb; 
+    uint8_t m_pinInb;
     uint8_t m_pinCs;
     uint8_t m_pinEn;
     uint8_t m_pinPwm;
@@ -131,7 +132,7 @@ private:
         digitalWrite(m_pinIna, LOW);
         digitalWrite(m_pinInb, LOW);
     }
-    
+
     void setMotionRight() {
         digitalWrite(m_pinIna, HIGH);
         digitalWrite(m_pinInb, LOW);
@@ -141,7 +142,6 @@ private:
         digitalWrite(m_pinIna, LOW);
         digitalWrite(m_pinInb, HIGH);
     }
-
 };
 
 #endif /* MYMOTOR_H_ */
